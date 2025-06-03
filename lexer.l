@@ -83,10 +83,3 @@ using namespace std;
 %%
 
 int yywrap() { return 1; }
-
-int main() {
-    cout << "Iniciando análise léxica..." << endl;
-    yylex();
-    cout << "Análise léxica concluída." << endl;
-    return 0;
-}
