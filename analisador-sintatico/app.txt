@@ -1,0 +1,11 @@
+void calcular() {
+    int x = 10;
+    if (x > 0) {
+        while (x > 0) {
+            print("Contagem: " + x);
+            x = x - 1;
+        }
+    } else {
+        print("Valor inválido");
+    }
+}
