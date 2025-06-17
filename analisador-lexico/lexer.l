@@ -1,103 +1,142 @@
 %{
-#include <iostream>
+#include <cstdlib>
 #include <string>
-#include <cstring>  // Para strlen()
+#include <iostream>
+#include "tokens.h"
 
 using namespace std;
 
-
-
-// Definir constantes para tokens (opcional)
-#define TOK_IF 1
-#define TOK_ELSE 2
-#define TOK_WHILE 3
-#define TOK_FUNCAO 4
+extern YYSTYPE yylval;
 %}
 
 %option noyywrap
+%option noinput
+%option nounput
 
+%x COMMENT
 
 %%
 
-"if"              { cout << "TOKEN: IF" << endl; }
-"else"            { cout << "TOKEN: ELSE" << endl; }
-"while"           { cout << "TOKEN: WHILE" << endl; }
-"for"             { cout << "TOKEN: FOR" << endl; }
-"return"          { cout << "TOKEN: RETURN" << endl; }
+"int"             { cout << "TOK_INT\n"; return TOK_INT; }
+"float"           { cout << "TOK_FLOAT\n"; return TOK_FLOAT; }
+"char"            { cout << "TOK_CHAR\n"; return TOK_CHAR; }
+"string"          { cout << "TOK_STRING\n"; return TOK_STRING; }
+"void"            { cout << "TOK_VOID\n"; return TOK_VOID; }
+"if"              { cout << "TOK_IF\n"; return TOK_IF; }
+"else"            { cout << "TOK_ELSE\n"; return TOK_ELSE; }
+"for"             { cout << "TOK_FOR\n"; return TOK_FOR; }
+"while"           { cout << "TOK_WHILE\n"; return TOK_WHILE; }
+"return"          { cout << "TOK_RETURN\n"; return TOK_RETURN; }
+"class"           { cout << "TOK_CLASS\n"; return TOK_CLASS; }
+"new"             { cout << "TOK_NEW\n"; return TOK_NEW; }
+"this"            { cout << "TOK_THIS\n"; return TOK_THIS; }
+"static"          { cout << "TOK_STATIC\n"; return TOK_STATIC; }
+"public"          { cout << "TOK_PUBLIC\n"; return TOK_PUBLIC; }
+"private"         { cout << "TOK_PRIVATE\n"; return TOK_PRIVATE; }
+"main"            { cout << "TOK_MAIN\n"; return TOK_MAIN; }
 
-"int"             { cout << "TOKEN: TIPO_INT" << endl; }
-"float"           { cout << "TOKEN: TIPO_FLOAT" << endl; }
-"char"            { cout << "TOKEN: TIPO_CHAR" << endl; }
-"string"          { cout << "TOKEN: TIPO_STRING" << endl; }
-"void"            { cout << "TOKEN: VOID" << endl; }
+"=="              { cout << "TOK_IGUALDADE\n"; return TOK_IGUALDADE; }
+"!="              { cout << "TOK_DIFERENTE\n"; return TOK_DIFERENTE; }
+">="              { cout << "TOK_MAIOR_IGUAL\n"; return TOK_MAIOR_IGUAL; }
+"<="              { cout << "TOK_MENOR_IGUAL\n"; return TOK_MENOR_IGUAL; }
+">"               { cout << "TOK_MAIOR\n"; return TOK_MAIOR; }
+"<"               { cout << "TOK_MENOR\n"; return TOK_MENOR; }
+"="               { cout << "TOK_ATRIBUICAO\n"; return TOK_ATRIBUICAO; }
+"&&"              { cout << "TOK_E_LOGICO\n"; return TOK_E_LOGICO; }
+"||"              { cout << "TOK_OU_LOGICO\n"; return TOK_OU_LOGICO; }
+"!"               { cout << "TOK_NEGACAO\n"; return TOK_NEGACAO; }
+"+"               { cout << "TOK_MAIS\n"; return TOK_MAIS; }
+"-"               { cout << "TOK_MENOS\n"; return TOK_MENOS; }
+"*"               { cout << "TOK_MULT\n"; return TOK_MULT; }
+"/"               { cout << "TOK_DIV\n"; return TOK_DIV; }
+"."               { cout << "TOK_PONTO\n"; return TOK_PONTO; }
 
-"=="              { cout << "TOKEN: IGUALDADE" << endl; }
-"!="              { cout << "TOKEN: DIFERENTE" << endl; }
-">="              { cout << "TOKEN: MAIOR_IGUAL" << endl; }
-"<="              { cout << "TOKEN: MENOR_IGUAL" << endl; }
-">"               { cout << "TOKEN: MAIOR" << endl; }
-"<"               { cout << "TOKEN: MENOR" << endl; }
-"="               { cout << "TOKEN: ATRIBUICAO" << endl; }
-"&&"              { cout << "TOKEN: E_LOGICO" << endl; }
-"||"              { cout << "TOKEN: OU_LOGICO" << endl; }
-"!"               { cout << "TOKEN: NEGACAO" << endl; }
-"+"               { cout << "TOKEN: SOMA" << endl; }
-"-"               { cout << "TOKEN: SUBTRACAO" << endl; }
-"*"               { cout << "TOKEN: MULTIPLICACAO" << endl; }
-"/"               { cout << "TOKEN: DIVISAO" << endl; }
-"."               { cout << "TOKEN: PONTO" << endl; }
+";"               { cout << "TOK_PONTO_VIRGULA\n"; return TOK_PONTO_VIRGULA; }
+","               { cout << "TOK_VIRGULA\n"; return TOK_VIRGULA; }
+"("               { cout << "TOK_ABRE_PARENTESES\n"; return TOK_ABRE_PARENTESES; }
+")"               { cout << "TOK_FECHA_PARENTESES\n"; return TOK_FECHA_PARENTESES; }
+"{"               { cout << "TOK_ABRE_CHAVE\n"; return TOK_ABRE_CHAVE; }
+"}"               { cout << "TOK_FECHA_CHAVE\n"; return TOK_FECHA_CHAVE; }
+"["               { cout << "TOK_ABRE_COLCHETE\n"; return TOK_ABRE_COLCHETE; }
+"]"               { cout << "TOK_FECHA_COLCHETE\n"; return TOK_FECHA_COLCHETE; }
 
-";"               { cout << "TOKEN: PONTO_VIRGULA" << endl; }
-","               { cout << "TOKEN: VIRGULA" << endl; }
-"("               { cout << "TOKEN: ABRE_PARENTESES" << endl; }
-")"               { cout << "TOKEN: FECHA_PARENTESES" << endl; }
-"{"               { cout << "TOKEN: ABRE_CHAVES" << endl; }
-"}"               { cout << "TOKEN: FECHA_CHAVES" << endl; }
-"["               { cout << "TOKEN: ABRE_COLCHETES" << endl; }
-"]"               { cout << "TOKEN: FECHA_COLCHETES" << endl; }
-
-\"([^\"\n]*)\"    { cout << "TOKEN: STRING_LITERAL (" << yytext << ")" << endl; }
-\'.\'             { cout << "TOKEN: CHAR_LITERAL (" << yytext << ")" << endl; }
-\'\\n\'           { cout << "TOKEN: CHAR_LITERAL (\\n)" << endl; }
-\'\\t\'           { cout << "TOKEN: CHAR_LITERAL (\\t)" << endl; }
-
-[0-9]+\.[0-9]+    { cout << "TOKEN: FLOAT (" << yytext << ")" << endl; }
-[0-9]+            { cout << "TOKEN: INT (" << yytext << ")" << endl; }
-
-[a-zA-Z_][a-zA-Z0-9_]*"(" {
-    // Reconhecimento de funções
-    std::string func_name(yytext, strlen(yytext) - 1);
-    cout << "TOKEN: FUNCAO (" << func_name << ")" << endl;
-    unput('(');
+\"(\\.|[^\\"])*\" { 
+    string text(yytext);
+    string content = text.substr(1, text.size() - 2);
+    yylval.str_val = new string(content);
+    cout << "TOK_STRING_LIT: " << content << "\n"; 
+    return TOK_STRING_LIT; 
 }
 
-[a-zA-Z_][a-zA-Z0-9_]* {
-    cout << "TOKEN: IDENTIFICADOR (" << yytext << ")" << endl;
+\'.\'             { 
+    yylval.char_val = yytext[1]; 
+    cout << "TOK_CHAR_LIT: '" << yytext[1] << "'\n"; 
+    return TOK_CHAR_LIT; 
+}
+
+\'\\n\'           { 
+    yylval.char_val = '\n'; 
+    cout << "TOK_CHAR_LIT: '\\n'\n"; 
+    return TOK_CHAR_LIT; 
+}
+
+\'\\t\'           { 
+    yylval.char_val = '\t'; 
+    cout << "TOK_CHAR_LIT: '\\t'\n"; 
+    return TOK_CHAR_LIT; 
+}
+
+[0-9]+\.[0-9]+    { 
+    yylval.float_val = atof(yytext); 
+    cout << "TOK_FLOAT_LIT: " << yytext << "\n"; 
+    return TOK_FLOAT_LIT; 
+}
+
+[0-9]+            { 
+    yylval.int_val = atoi(yytext); 
+    cout << "TOK_INT_LIT: " << yytext << "\n"; 
+    return TOK_INT_LIT; 
+}
+
+[a-zA-Z_][a-zA-Z0-9_]* { 
+    yylval.str_val = new string(yytext); 
+    cout << "TOK_ID: " << yytext << "\n"; 
+    return TOK_ID; 
 }
 
 [ \t\r\n]+        { /* ignora espaços */ }
 
-"//".*            { /* Comentário de linha - ignora */ }
+"//"[^\n]*        { /* Comentário de linha - ignora */ }
 
 "/*"              { 
-    // Comentário de bloco
-    int c;
-    while ((c = yyinput()) != 0) {
-        if (c == '*') {
-            if ((c = yyinput()) == '/') break;
-            else unput(c);
-        }
+    cout << "INICIO_COMENTARIO_BLOCO\n";
+    BEGIN(COMMENT); 
+}
+<COMMENT>{
+    "*/"          { 
+        cout << "FIM_COMENTARIO_BLOCO\n";
+        BEGIN(INITIAL); 
+    }
+    [^*]+         { /* Consome qualquer coisa que não seja '*' */ }
+    "*"           { /* Consome '*' isolado */ }
+    <<EOF>>       { 
+        cerr << "ERRO: Comentário de bloco não fechado\n"; 
+        return TOK_ERRO; 
     }
 }
 
-.                 { cout << "TOKEN: CARACTERE_NAO_RECONHECIDO (" << yytext << ")" << endl; }
+.                 { 
+    cout << "TOK_ERRO: '" << yytext << "'\n"; 
+    return TOK_ERRO; 
+}
 
 %%
 
 int main() {
-    cout << "===== ANALISADOR LÉXICO =====" << endl;
-    cout << "Iniciando análise..." << endl;
-    yylex();
-    cout << "Análise concluída com sucesso!" << endl;
+    cout << "===== ANALISADOR LÉXICO INICIADO =====" << endl;
+    while (int token = yylex()) {
+        // Processa todos os tokens até EOF (token 0)
+    }
+    cout << "===== ANÁLISE LÉXICA CONCLUÍDA =====" << endl;
     return 0;
 }

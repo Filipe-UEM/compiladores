@@ -1,11 +1,32 @@
-void calcular() {
-    int x = 10;
-    if (x > 0) {
-        while (x > 0) {
-            print("Contagem: " + x);
-            x = x - 1;
-        }
-    } else {
-        print("Valor inválido");
-    }
-}
+class Carro:
+    def __init__(self, marca, modelo, cor):
+        self.marca = marca
+        self.modelo = modelo
+        self.cor = cor
+        self.velocidade = 0
+
+    def acelerar(self, incremento):
+        self.velocidade += incremento
+
+    def frear(self, decremento):
+        self.velocidade -= decremento
+        if self.velocidade < 0:
+            self.velocidade = 0
+
+    def exibir_informacoes(self):
+        print(f"Marca: {self.marca}, Modelo: {self.modelo}, Cor: {self.cor}, Velocidade: {self.velocidade}")
+
+
+# Criando objetos (instâncias) da classe Carro
+meu_carro = Carro("Toyota", "Corolla", "Prata")
+seu_carro = Carro("Honda", "Civic", "Azul")
+
+# Acessando e modificando atributos
+meu_carro.exibir_informacoes()
+seu_carro.exibir_informacoes()
+
+meu_carro.acelerar(50)
+meu_carro.exibir_informacoes()
+
+seu_carro.frear(20)
+seu_carro.exibir_informacoes()
