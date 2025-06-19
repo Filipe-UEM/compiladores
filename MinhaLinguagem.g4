@@ -24,7 +24,7 @@ parametro
     ;
 
 declaracao_variavel
-    : tipo ID=IDENTIFICADOR ('=' expressao)? ';'
+    : tipo ID=IDENTIFICADOR ('[' expressao? ']')? ('=' expressao)? ';'  
     ;
 
 bloco
@@ -35,12 +35,13 @@ declaracao
     : declaracao_variavel
     | estrutura_controle
     | expressao ';'
+    | 'return' expressao? ';'
     ;
 
 estrutura_controle
-    : 'if' '(' expressao ')' declaracao ('else' declaracao)?  # If
-    | 'while' '(' expressao ')' declaracao                    # While
-    | 'for' '(' declaracao_variavel expressao ';' expressao ')' declaracao # For
+    : 'if' '(' expressao ')' bloco ('else' bloco)?  # If  // Usar bloco em vez de declaracao
+    | 'while' '(' expressao ')' bloco               # While
+    | 'for' '(' declaracao_variavel expressao ';' expressao ')' bloco # For
     ;
 
 expressao
@@ -57,13 +58,15 @@ expressao
     | NUM_INT                                                 # Inteiro
     | NUM_FLOAT                                               # Float
     | TEXTO                                                   # String
+    | IDENTIFICADOR '[' expressao ']'                         # AcessoVetor
+    | 'new' tipo ('[' expressao ']')?                         # New 
     ;
 
 tipo
-    : 'int'
-    | 'float'
-    | 'char'
-    | 'string'
+    : 'int' ('[' ']')?    
+    | 'float' ('[' ']')?  
+    | 'char' ('[' ']')?   
+    | 'string' ('[' ']')? 
     | 'void'
     ;
 
@@ -75,6 +78,8 @@ FECHA_PARENTESES: ')';
 ABRE_CHAVES: '{';
 FECHA_CHAVES: '}';
 ATRIBUICAO: '=';
+ABRE_COLCHETES: '[';
+FECHA_COLCHETES: ']';
 
 MAIS: '+';
 MENOS: '-';

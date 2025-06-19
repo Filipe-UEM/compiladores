@@ -1,113 +1,33 @@
-grammar MinhaLinguagem;
+#include <iostream>
+#include <fstream>
+#include "antlr4-runtime.h"
+#include "MinhaLinguagemLexer.h"
+#include "MinhaLinguagemParser.h"
+#include "MeuVisitor.h"
 
-programa: (declaracao_classe | declaracao_funcao)+ EOF;
+using namespace antlr4;
 
-declaracao_classe
-    : 'class' ID=IDENTIFICADOR '{' membro* '}'
-    ;
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        std::cerr << "Uso: " << argv[0] << " <arquivo>\n";
+        return 1;
+    }
 
-membro
-    : declaracao_variavel
-    | declaracao_funcao
-    ;
+    std::ifstream stream(argv[1]);
+    ANTLRInputStream input(stream);
+    
+    MinhaLinguagemLexer lexer(&input);
+    CommonTokenStream tokens(&lexer);
+    
+    MinhaLinguagemParser parser(&tokens);
+    MinhaLinguagemParser::ProgramaContext *tree = parser.programa();
 
-declaracao_funcao
-    : tipo ID=IDENTIFICADOR '(' parametros? ')' bloco
-    ;
+    // Imprime a árvore sintática
+    std::cout << tree->toStringTree(&parser) << std::endl;
 
-parametros
-    : parametro (',' parametro)*
-    ;
+    // Executa o visitor
+    MeuVisitor visitor;
+    visitor.visitPrograma(tree);
 
-parametro
-    : tipo ID=IDENTIFICADOR
-    ;
-
-declaracao_variavel
-    : tipo ID=IDENTIFICADOR ('=' expressao)? ';'
-    ;
-
-bloco
-    : '{' declaracao* '}'
-    ;
-
-declaracao
-    : declaracao_variavel
-    | estrutura_controle
-    | expressao ';'
-    ;
-
-estrutura_controle
-    : 'if' '(' expressao ')' declaracao ('else' declaracao)?  # If
-    | 'while' '(' expressao ')' declaracao                    # While
-    | 'for' '(' declaracao_variavel expressao ';' expressao ')' declaracao # For
-    ;
-
-expressao
-    : IDENTIFICADOR '=' expressao                             # Atribuicao
-    | expressao op=('*' | '/') expressao                      # Binaria
-    | expressao op=('+' | '-') expressao                      # Binaria
-    | expressao op=('>' | '>=' | '<' | '<=') expressao        # Binaria
-    | expressao op=('==' | '!=') expressao                    # Binaria
-    | expressao op='&&' expressao                             # Binaria
-    | expressao op='||' expressao                             # Binaria
-    | '(' expressao ')'                                       # Grupo
-    | IDENTIFICADOR '(' (expressao (',' expressao)*)? ')'     # ChamadaFuncao
-    | IDENTIFICADOR                                           # Variavel
-    | NUM_INT                                                 # Inteiro
-    | NUM_FLOAT                                               # Float
-    | TEXTO                                                   # String
-    ;
-
-tipo
-    : 'int'
-    | 'float'
-    | 'char'
-    | 'string'
-    | 'void'
-    ;
-
-// Tokens
-PONTO_VIRGULA: ';';
-VIRGULA: ',';
-ABRE_PARENTESES: '(';
-FECHA_PARENTESES: ')';
-ABRE_CHAVES: '{';
-FECHA_CHAVES: '}';
-ATRIBUICAO: '=';
-
-MAIS: '+';
-MENOS: '-';
-MULT: '*';
-DIV: '/';
-
-MAIOR: '>';
-MAIOR_IGUAL: '>=';
-MENOR: '<';
-MENOR_IGUAL: '<=';
-IGUAL: '==';
-DIFERENTE: '!=';
-
-E_LOGICO: '&&';
-OU_LOGICO: '||';
-
-IF: 'if';
-ELSE: 'else';
-WHILE: 'while';
-FOR: 'for';
-CLASS: 'class';
-RETURN: 'return';
-INT: 'int';
-FLOAT: 'float';
-CHAR: 'char';
-STRING: 'string';
-VOID: 'void';
-
-IDENTIFICADOR: [a-zA-Z_][a-zA-Z0-9_]*;
-NUM_INT: [0-9]+;
-NUM_FLOAT: [0-9]+ '.' [0-9]+;
-TEXTO: '"' .*? '"';
-
-COMENTARIO: '//' ~[\r\n]* -> skip;
-COMENTARIO_BLOCO: '/*' .*? '*/' -> skip;
-ESPACO: [ \t\r\n]+ -> skip;
+    return 0;
+}

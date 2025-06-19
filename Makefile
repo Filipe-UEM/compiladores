@@ -1,18 +1,21 @@
-ANTLR_JAR = antlr-4.13.1-complete.jar
-GRAMATICA = gramatica.g4
-GERADOS = gramaticaLexer.cpp gramaticaParser.cpp gramaticaBaseVisitor.cpp gramaticaBaseListener.cpp
-HEADERS = gramaticaLexer.h gramaticaParser.h gramaticaBaseVisitor.h gramaticaBaseListener.h
+ANTLR_JAR=antlr-4.13.1-complete.jar
+GRAMMAR=MinhaLinguagem.g4
+TARGET=parser
 
-all: parser
+all: $(TARGET)
 
-parser: $(GERADOS) $(HEADERS) src/main.cpp src/MeuVisitor.h
-	g++ -std=c++17 -I src -I. $(GERADOS) src/main.cpp -lantlr4-runtime -o parser
+generate:
+	java -jar $(ANTLR_JAR) -Dlanguage=Cpp -visitor -no-listener $(GRAMMAR)
 
-$(GERADOS) $(HEADERS): $(GRAMATICA) $(ANTLR_JAR)
-	java -jar $(ANTLR_JAR) -Dlanguage=Cpp -visitor -no-listener $(GRAMATICA)
-
-run: parser
-	./parser exemplos/teste.txt
+$(TARGET): generate
+	g++ -std=c++17 -I. -I./antlr4-runtime \
+		MinhaLinguagem*.cpp \
+		src/main.cpp \
+		-L/usr/local/lib -lantlr4-runtime -o $(TARGET)
 
 clean:
-	rm -f $(GERADOS) $(HEADERS) *.tokens *.interp parser ast.txt
+	rm -f MinhaLinguagem*.cpp MinhaLinguagem*.h *.interp *.tokens
+	rm -f $(TARGET)
+
+run: $(TARGET)
+	LD_LIBRARY_PATH=/usr/local/lib ./$(TARGET) exemplos/teste.txt
