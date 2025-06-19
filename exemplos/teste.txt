@@ -1,0 +1,16 @@
+class Carro {
+    int velocidade;
+    string cor;
+
+    void acelerar(int incremento) {
+        velocidade = velocidade + incremento;
+    }
+
+    void frear(int decremento) {
+        if (velocidade > decremento) {
+            velocidade = velocidade - decremento;
+        } else {
+            velocidade = 0;
+        }
+    }
+}

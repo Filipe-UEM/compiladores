@@ -1,0 +1,113 @@
+grammar MinhaLinguagem;
+
+programa: (declaracao_classe | declaracao_funcao)+ EOF;
+
+declaracao_classe
+    : 'class' ID=IDENTIFICADOR '{' membro* '}'
+    ;
+
+membro
+    : declaracao_variavel
+    | declaracao_funcao
+    ;
+
+declaracao_funcao
+    : tipo ID=IDENTIFICADOR '(' parametros? ')' bloco
+    ;
+
+parametros
+    : parametro (',' parametro)*
+    ;
+
+parametro
+    : tipo ID=IDENTIFICADOR
+    ;
+
+declaracao_variavel
+    : tipo ID=IDENTIFICADOR ('=' expressao)? ';'
+    ;
+
+bloco
+    : '{' declaracao* '}'
+    ;
+
+declaracao
+    : declaracao_variavel
+    | estrutura_controle
+    | expressao ';'
+    ;
+
+estrutura_controle
+    : 'if' '(' expressao ')' declaracao ('else' declaracao)?  # If
+    | 'while' '(' expressao ')' declaracao                    # While
+    | 'for' '(' declaracao_variavel expressao ';' expressao ')' declaracao # For
+    ;
+
+expressao
+    : IDENTIFICADOR '=' expressao                             # Atribuicao
+    | expressao op=('*' | '/') expressao                      # Binaria
+    | expressao op=('+' | '-') expressao                      # Binaria
+    | expressao op=('>' | '>=' | '<' | '<=') expressao        # Binaria
+    | expressao op=('==' | '!=') expressao                    # Binaria
+    | expressao op='&&' expressao                             # Binaria
+    | expressao op='||' expressao                             # Binaria
+    | '(' expressao ')'                                       # Grupo
+    | IDENTIFICADOR '(' (expressao (',' expressao)*)? ')'     # ChamadaFuncao
+    | IDENTIFICADOR                                           # Variavel
+    | NUM_INT                                                 # Inteiro
+    | NUM_FLOAT                                               # Float
+    | TEXTO                                                   # String
+    ;
+
+tipo
+    : 'int'
+    | 'float'
+    | 'char'
+    | 'string'
+    | 'void'
+    ;
+
+// Tokens
+PONTO_VIRGULA: ';';
+VIRGULA: ',';
+ABRE_PARENTESES: '(';
+FECHA_PARENTESES: ')';
+ABRE_CHAVES: '{';
+FECHA_CHAVES: '}';
+ATRIBUICAO: '=';
+
+MAIS: '+';
+MENOS: '-';
+MULT: '*';
+DIV: '/';
+
+MAIOR: '>';
+MAIOR_IGUAL: '>=';
+MENOR: '<';
+MENOR_IGUAL: '<=';
+IGUAL: '==';
+DIFERENTE: '!=';
+
+E_LOGICO: '&&';
+OU_LOGICO: '||';
+
+IF: 'if';
+ELSE: 'else';
+WHILE: 'while';
+FOR: 'for';
+CLASS: 'class';
+RETURN: 'return';
+INT: 'int';
+FLOAT: 'float';
+CHAR: 'char';
+STRING: 'string';
+VOID: 'void';
+
+IDENTIFICADOR: [a-zA-Z_][a-zA-Z0-9_]*;
+NUM_INT: [0-9]+;
+NUM_FLOAT: [0-9]+ '.' [0-9]+;
+TEXTO: '"' .*? '"';
+
+COMENTARIO: '//' ~[\r\n]* -> skip;
+COMENTARIO_BLOCO: '/*' .*? '*/' -> skip;
+ESPACO: [ \t\r\n]+ -> skip;

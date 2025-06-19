@@ -1,0 +1,21 @@
+class Animal {
+    void emitirSom() {
+        print("Som genérico");
+    }
+}
+
+class Cachorro extends Animal {
+    void emitirSom() {
+        print("Au au!");
+    }
+    
+    void abanarRabo() {
+        print("Abanando rabo...");
+    }
+}
+
+void main() {
+    Cachorro rex;
+    rex.emitirSom();
+    rex.abanarRabo();
+}
