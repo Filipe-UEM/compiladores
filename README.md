@@ -19,13 +19,12 @@ No diretório raiz do projeto, execute:
 ```bash
 make clean
 make
-
+```
 
 ## 🚀 Executando o Projeto
 
 Após a compilação, execute o parser com o seguinte comando:
 
-bash
-Copy
-Edit
+```bash
 LD_LIBRARY_PATH=/usr/local/lib ./parser exemplos/teste.txt
+```
