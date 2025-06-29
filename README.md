@@ -21,9 +21,7 @@ sudo apt install cmake make g++ uuid-dev pkg-config
 ### Instalar o Runtime C++ do ANTLR
 
 ```bash
-wget https://www.antlr.org/download/antlr4-cpp-runtime-4.13.1-source.zip
-unzip antlr4-cpp-runtime-4.13.1-source.zip
-cd antlr4-cpp-runtime-4.13.1/
+cd antlr4
 mkdir build && cd build
 cmake ..
 make
@@ -55,4 +53,3 @@ Após a compilação, execute o parser com o seguinte comando:
 ```bash
 LD_LIBRARY_PATH=/usr/local/lib ./parser exemplos/teste.txt
 ```
-## teste
