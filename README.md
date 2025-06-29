@@ -55,3 +55,4 @@ Após a compilação, execute o parser com o seguinte comando:
 ```bash
 LD_LIBRARY_PATH=/usr/local/lib ./parser exemplos/teste.txt
 ```
+## teste
