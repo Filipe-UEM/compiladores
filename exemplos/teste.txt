@@ -1,32 +1,18 @@
-class Carro {
-    int velocidade;
-    string cor;
-    int[] historico = new int[10];
-    int contador = 0;
-
-    void acelerar(int incremento) {
-        velocidade = velocidade + incremento;
-        historico[contador] = velocidade;
-        contador = contador + 1;
-    }
-
-    void frear(int decremento) {
-        if (velocidade > decremento) {
-            velocidade = velocidade - decremento;
-        } else {
-            velocidade = 0;
-        }
+class MinhaClasse {
+    int soma(int a, int b) {
+        return a + b;
     }
     
-    void imprimeHistorico() {
-        for (int i = 0; i < 10; i = i + 1) {
-            if (historico[i] > 0) {
-                imprimir(historico[i]);
-            }
+    void main() {
+        int x = 10;
+        int y = 20;
+        int resultado = soma(x, y);
+        
+        if (resultado > 0) {
+            float z = 3.14;
         }
-    }
-    
-    void imprimir(int valor) {
-        // Exemplo de método
+        
+        int[] vetor = new int[10];
+        vetor[0] = 5;  // Corrigido: atribuição completa em uma linha
     }
 }

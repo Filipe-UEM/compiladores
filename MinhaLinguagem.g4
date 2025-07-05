@@ -32,10 +32,10 @@ bloco
     ;
 
 declaracao
-    : declaracao_variavel
-    | estrutura_controle
-    | expressao ';'
-    | 'return' expressao? ';'
+    : declaracao_variavel                     # DeclaracaoVariavel
+    | estrutura_controle                      # DeclaracaoControle
+    | expressao ';'                           # ExpressaoStat
+    | 'return' expressao? ';'                 # ReturnStat
     ;
 
 estrutura_controle

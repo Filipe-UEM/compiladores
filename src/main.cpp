@@ -4,6 +4,7 @@
 #include "MinhaLinguagemLexer.h"
 #include "MinhaLinguagemParser.h"
 #include "MeuVisitor.h"
+#include "SemanticVisitor.h"  // Inclua o novo header
 
 using namespace antlr4;
 
@@ -22,12 +23,25 @@ int main(int argc, char *argv[]) {
     MinhaLinguagemParser parser(&tokens);
     MinhaLinguagemParser::ProgramaContext *tree = parser.programa();
 
-    // Imprime a árvore sintática
+    // 1. Imprime a árvore sintática
+    std::cout << "Árvore Sintática:\n";
     std::cout << tree->toStringTree(&parser) << std::endl;
 
-    // Executa o visitor
+    // 2. Executa o visitor de impressão
+    std::cout << "\nEstrutura do Programa:\n";
     MeuVisitor visitor;
     visitor.visitPrograma(tree);
+
+    // 3. Executa a análise semântica
+    std::cout << "\nAnálise Semântica:\n";
+    try {
+        SemanticVisitor semanticVisitor;
+        semanticVisitor.visitPrograma(tree);
+        std::cout << "Análise semântica concluída sem erros.\n";
+    } catch (const std::runtime_error& e) {
+        std::cerr << "ERRO: " << e.what() << std::endl;
+        return 1;
+    }
 
     return 0;
 }

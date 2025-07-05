@@ -8,9 +8,10 @@ generate:
 	java -jar $(ANTLR_JAR) -Dlanguage=Cpp -visitor -no-listener $(GRAMMAR)
 
 $(TARGET): generate
-	g++ -std=c++17 -I. -I./antlr4-runtime \
+	g++ -std=c++17 -I. -I./antlr4-runtime -I./include \
 		MinhaLinguagem*.cpp \
 		src/main.cpp \
+		src/SemanticVisitor.cpp \
 		-L/usr/local/lib -lantlr4-runtime -o $(TARGET)
 
 clean:
