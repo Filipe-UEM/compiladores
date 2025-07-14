@@ -1,19 +1,6 @@
-class Calculadora {
-    int soma(int a, int b) {
-        return a + b;
-    }
-    
-    float media(float[] valores) {
-        float total = 0;
-        for (int i = 0; i < valores.length; i++) {
-            total = total + valores[i];
-        }
-        return total / valores.length;
-    }
-}
-
 void main() {
-    Calculadora calc;
-    int resultado = calc.soma(5, 3);
-    print("Resultado: " + resultado);
+    int b = 1; 
+    int a = 2;
+
+    return a + b;
 }

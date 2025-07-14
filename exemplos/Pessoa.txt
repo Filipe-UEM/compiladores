@@ -1,0 +1,9 @@
+public class Pessoa {
+    string nome;
+    int idade;
+
+    Pessoa(string n, int i) {
+        nome = n;
+        idade = i;
+    }
+}

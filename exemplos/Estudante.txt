@@ -1,0 +1,7 @@
+public class Estudante extends Pessoa {
+    string curso;
+
+    Estudante(string n, int i, string c) : Pessoa(n, i) {
+        curso = c;
+    }
+}

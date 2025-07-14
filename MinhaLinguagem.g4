@@ -3,12 +3,20 @@ grammar MinhaLinguagem;
 programa: (declaracao_classe | declaracao_funcao)+ EOF;
 
 declaracao_classe
-    : 'class' ID=IDENTIFICADOR '{' membro* '}'
+    : (PUBLIC | PRIVATE | PROTECTED)? STATIC? 'class' ID=IDENTIFICADOR ('extends' IDENTIFICADOR)? '{' membro* '}'
     ;
 
 membro
-    : declaracao_variavel
-    | declaracao_funcao
+    : anotacao? declaracao_variavel
+    | anotacao? declaracao_funcao
+    | anotacao? declaracao_construtor  // Adicionado
+    ;
+
+// Regra do construtor:
+declaracao_construtor
+    : (PUBLIC|PRIVATE|PROTECTED)? IDENTIFICADOR '(' parametros? ')' 
+      (DOIS_PONTOS IDENTIFICADOR '(' (expressao (',' expressao)*)? ')')? // Chamada de superclasse
+      bloco
     ;
 
 declaracao_funcao
@@ -32,16 +40,16 @@ bloco
     ;
 
 declaracao
-    : declaracao_variavel
-    | estrutura_controle
-    | expressao ';'
-    | 'return' expressao? ';'
+    : declaracao_variavel                                    # VarDecl
+    | estrutura_controle                                     # ControleDecl
+    | expressao ';'                                          # ExprStmt
+    | 'return' expressao? ';'                                # ReturnStmt
     ;
 
 estrutura_controle
-    : 'if' '(' expressao ')' bloco ('else' bloco)?  # If  // Usar bloco em vez de declaracao
+    : 'if' '(' expressao ')' bloco ('else' bloco)?  # If
     | 'while' '(' expressao ')' bloco               # While
-    | 'for' '(' declaracao_variavel expressao ';' expressao ')' bloco # For
+    | 'for' '(' (declaracao_variavel | expressao? ) ';' expressao? ';' expressao? ')' bloco # For
     ;
 
 expressao
@@ -59,15 +67,31 @@ expressao
     | NUM_FLOAT                                               # Float
     | TEXTO                                                   # String
     | IDENTIFICADOR '[' expressao ']'                         # AcessoVetor
-    | 'new' tipo ('[' expressao ']')?                         # New 
+    | 'new' IDENTIFICADOR '(' (expressao (',' expressao)*)? ')'  # NewObjeto  // Corrigido
+    | 'new' tipo_base '[' expressao ']'                       # NewVetor     // Corrigido
+    | expressao '.' IDENTIFICADOR                             # AcessoMembro
+    | expressao '.' IDENTIFICADOR '(' (expressao (',' expressao)*)? ')' # ChamadaMetodo
+    | expressao '.' IDENTIFICADOR '=' expressao                # AtribuicaoMembro
+    | expressao '[' expressao ']' '=' expressao                # AtribuicaoVetor
+    ;
+
+// Corrigido para suportar tipos de classe
+tipo_base
+    : 'int'    
+    | 'float'  
+    | 'char'   
+    | 'string' 
+    | 'String' 
+    | IDENTIFICADOR  // Suporte a tipos de classe
     ;
 
 tipo
-    : 'int' ('[' ']')?    
-    | 'float' ('[' ']')?  
-    | 'char' ('[' ']')?   
-    | 'string' ('[' ']')? 
+    : tipo_base ('[' ']')?  // Suporta vetores
     | 'void'
+    ;
+
+anotacao
+    : OVERRIDE
     ;
 
 // Tokens
@@ -80,6 +104,15 @@ FECHA_CHAVES: '}';
 ATRIBUICAO: '=';
 ABRE_COLCHETES: '[';
 FECHA_COLCHETES: ']';
+PONTO: '.';
+DOIS_PONTOS: ':';
+
+PUBLIC: 'public';
+PRIVATE: 'private';
+PROTECTED: 'protected';
+STATIC: 'static';
+STRING_TYPE: 'String';
+OVERRIDE: '@Override';
 
 MAIS: '+';
 MENOS: '-';
