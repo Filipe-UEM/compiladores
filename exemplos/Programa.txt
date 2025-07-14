@@ -1,0 +1,6 @@
+int main() {
+    Pessoa p = new Pessoa("Ana", 30);
+    Estudante e = new Estudante("João", 20, "Computação");
+    print(e.curso);
+    return 0;
+}

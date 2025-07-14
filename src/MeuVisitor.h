@@ -1,35 +1,66 @@
 #include "MinhaLinguagemBaseVisitor.h"  // Nome correto do header
+#include "TabelaSimbolos.h"
 #include <iostream>
 #include <string>
 #include <vector>
 
 class MeuVisitor : public MinhaLinguagemBaseVisitor {  // Corrigir a classe base
 private:
+    TabelaSimbolos tabela;
     int nivel = 0;
-    
+    std::vector<std::string> errosSemanticos;
+
     void printIndent() {
-        for (int i = 0; i < nivel; i++) {
-            std::cout << "  ";
-        }
+        for (int i = 0; i < nivel; i++) std::cout << "  ";
+    }
+
+    void reportarErro(antlr4::ParserRuleContext* ctx, const std::string& mensagem) {
+        int linha = ctx->getStart()->getLine();
+        int coluna = ctx->getStart()->getCharPositionInLine();
+        errosSemanticos.push_back(
+            "ERRO [" + std::to_string(linha) + ":" + std::to_string(coluna) + "] " + mensagem
+        );
+    }
+
+    TipoDado stringParaTipo(const std::string& tipoStr) {
+        if (tipoStr == "int") return TipoDado::INT;
+        if (tipoStr == "float") return TipoDado::FLOAT;
+        if (tipoStr == "char") return TipoDado::CHAR;
+        if (tipoStr == "string") return TipoDado::STRING;
+        if (tipoStr == "void") return TipoDado::VOID;
+        return TipoDado::CLASSE;  // Tipos definidos pelo usuário
     }
 
 public:
-    // Corrigir todos os contextos para MinhaLinguagemParser::
-    antlrcpp::Any visitPrograma(MinhaLinguagemParser::ProgramaContext *ctx) override {
-        std::cout << "PROGRAMA\n";
-        nivel++;
+    const std::vector<std::string>& getErros() const { return errosSemanticos; }
+
+    antlrcpp::Any visitPrograma(MinhaLinguagemParser::ProgramaContext* ctx) override {
+        tabela.entrarEscopo();  // Escopo global
         visitChildren(ctx);
-        nivel--;
+        tabela.sairEscopo();
         return nullptr;
     }
     
     // Declaração de classe
-    antlrcpp::Any visitDeclaracao_classe(MinhaLinguagemParser::Declaracao_classeContext *ctx) override {
-        printIndent();
-        std::cout << "CLASSE: " << ctx->ID->getText() << "\n";
-        nivel++;
+    antlrcpp::Any visitDeclaracao_classe(MinhaLinguagemParser::Declaracao_classeContext* ctx) override {
+        std::string nomeClasse = ctx->ID->getText();
+        
+        // Verificar se classe já existe
+        if (tabela.buscarNoEscopoAtual(nomeClasse)) {
+            reportarErro(ctx, "Classe '" + nomeClasse + "' já declarada");
+        } else {
+            tabela.inserirSimbolo(Simbolo{
+                nomeClasse, 
+                TipoDado::CLASSE, 
+                Categoria::CLASSE, 
+                false, 
+                tabela.nivelAtual
+            });
+        }
+
+        tabela.entrarEscopo();  // Escopo da classe
         visitChildren(ctx);
-        nivel--;
+        tabela.sairEscopo();
         return nullptr;
     }
     
@@ -44,59 +75,71 @@ public:
     }
     
     // Declaração de função
-    antlrcpp::Any visitDeclaracao_funcao(MinhaLinguagemParser::Declaracao_funcaoContext *ctx) override {
-        printIndent();
-        std::cout << "FUNÇÃO: " << ctx->ID->getText() 
-                  << " (Tipo: " << ctx->tipo()->getText() << ")\n";
-        nivel++;
+    antlrcpp::Any visitDeclaracao_funcao(MinhaLinguagemParser::Declaracao_funcaoContext* ctx) override {
+        std::string nomeFuncao = ctx->ID->getText();
+        TipoDado tipoRetorno = stringParaTipo(ctx->tipo()->getText());
+        
+        // Coletar tipos dos parâmetros
+        std::vector<TipoDado> tiposParam;
+        if (ctx->parametros()) {
+            for (auto param : ctx->parametros()->parametro()) {
+                tiposParam.push_back(stringParaTipo(param->tipo()->getText()));
+            }
+        }
+
+        // Verificar se função já existe
+        if (tabela.buscarNoEscopoAtual(nomeFuncao)) {
+            reportarErro(ctx, "Função '" + nomeFuncao + "' já declarada");
+        } else {
+            tabela.inserirSimbolo(Simbolo{
+                nomeFuncao,
+                tipoRetorno,
+                tiposParam,
+                tabela.nivelAtual
+            });
+        }
+
+        tabela.entrarEscopo();  // Escopo da função
         visitChildren(ctx);
-        nivel--;
+        tabela.sairEscopo();
         return nullptr;
     }
     
     // Parâmetros de função
-    antlrcpp::Any visitParametros(MinhaLinguagemParser::ParametrosContext *ctx) override {
-        printIndent();
-        std::cout << "PARÂMETROS (" << ctx->parametro().size() << ")\n";
-        nivel++;
-        visitChildren(ctx);
-        nivel--;
-        return nullptr;
-    }
-    
-    // Parâmetro individual
-    antlrcpp::Any visitParametro(MinhaLinguagemParser::ParametroContext *ctx) override {
-        printIndent();
-        std::cout << "PARÂMETRO: " << ctx->ID->getText()
-                  << " (Tipo: " << ctx->tipo()->getText() << ")\n";
+    antlrcpp::Any visitParametro(MinhaLinguagemParser::ParametroContext* ctx) override {
+        std::string nomeParam = ctx->ID->getText();
+        TipoDado tipo = stringParaTipo(ctx->tipo()->getText());
+        
+        if (tabela.buscarNoEscopoAtual(nomeParam)) {
+            reportarErro(ctx, "Parâmetro '" + nomeParam + "' já declarado");
+        } else {
+            tabela.inserirSimbolo(Simbolo{
+                nomeParam,
+                tipo,
+                Categoria::PARAMETRO,
+                false,
+                tabela.nivelAtual
+            });
+        }
         return nullptr;
     }
     
     // Declaração de variável
-    antlrcpp::Any visitDeclaracao_variavel(MinhaLinguagemParser::Declaracao_variavelContext *ctx) override {
-        printIndent();
-        std::cout << "VARIÁVEL: " << ctx->ID->getText();
+    antlrcpp::Any visitDeclaracao_variavel(MinhaLinguagemParser::Declaracao_variavelContext* ctx) override {
+        std::string nomeVar = ctx->ID->getText();
+        TipoDado tipo = stringParaTipo(ctx->tipo()->getText());
+        bool isVetor = (ctx->ABRE_COLCHETES() != nullptr);
         
-        // Verificar se é vetor
-        if (ctx->getToken(MinhaLinguagemParser::ABRE_COLCHETES, 0) != nullptr) {
-            std::cout << " (VETOR)";
-        }
-        
-        std::cout << " (Tipo: " << ctx->tipo()->getText() << ")";
-        
-        // Verificar se há inicialização
-        if (ctx->ATRIBUICAO() != nullptr) {
-            std::cout << " com inicialização";
-        }
-        std::cout << "\n";
-        
-        // Se houver expressões (tamanho ou valor), visitá-las
-        if (!ctx->expressao().empty()) {
-            nivel++;
-            for (auto expr : ctx->expressao()) {
-                visit(expr);
-            }
-            nivel--;
+        if (tabela.buscarNoEscopoAtual(nomeVar)) {
+            reportarErro(ctx, "Variável '" + nomeVar + "' já declarada");
+        } else {
+            tabela.inserirSimbolo(Simbolo{
+                nomeVar,
+                tipo,
+                Categoria::VARIAVEL,
+                isVetor,
+                tabela.nivelAtual
+            });
         }
         return nullptr;
     }
@@ -247,9 +290,11 @@ public:
     }
     
     // Expressão: variável
-    antlrcpp::Any visitVariavel(MinhaLinguagemParser::VariavelContext *ctx) override {
-        printIndent();
-        std::cout << "VARIÁVEL: " << ctx->IDENTIFICADOR()->getText() << "\n";
+    antlrcpp::Any visitVariavel(MinhaLinguagemParser::VariavelContext* ctx) override {
+        std::string nome = ctx->IDENTIFICADOR()->getText();
+        if (!tabela.buscarSimbolo(nome)) {
+            reportarErro(ctx, "Variável não declarada: '" + nome + "'");
+        }
         return nullptr;
     }
     
@@ -283,20 +328,20 @@ public:
         return nullptr;
     }
 
-
+    
     // Expressão: return
-    // antlrcpp::Any visitReturn(MinhaLinguagemParser::ReturnContext *ctx) override {
-    //     printIndent();
-    //     std::cout << "RETURN";
-    //     if (ctx->expressao()) {
-    //         std::cout << " com expressão\n";
-    //         nivel++;
-    //         visit(ctx->expressao());
-    //         nivel--;
-    //     } else {
-    //         std::cout << "\n";
-    //     }
-    //     return nullptr;
-    // }
+    antlrcpp::Any visitReturnStmt(MinhaLinguagemParser::ReturnContext *ctx) override {
+        printIndent();
+        std::cout << "RETURN";
+        if (ctx->expressao()) {
+            std::cout << " com expressão\n";
+            nivel++;
+            visit(ctx->expressao());
+            nivel--;
+        } else {
+            std::cout << "\n";
+        }
+        return nullptr;
+    }
 
 };
