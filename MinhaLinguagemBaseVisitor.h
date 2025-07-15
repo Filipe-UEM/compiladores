@@ -27,6 +27,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitDeclaracao_construtor(MinhaLinguagemParser::Declaracao_construtorContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitDeclaracao_funcao(MinhaLinguagemParser::Declaracao_funcaoContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -47,7 +51,19 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitDeclaracao(MinhaLinguagemParser::DeclaracaoContext *ctx) override {
+  virtual std::any visitVarDecl(MinhaLinguagemParser::VarDeclContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitControleDecl(MinhaLinguagemParser::ControleDeclContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprStmt(MinhaLinguagemParser::ExprStmtContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitReturnStmt(MinhaLinguagemParser::ReturnStmtContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -67,15 +83,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitFloat(MinhaLinguagemParser::FloatContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitNew(MinhaLinguagemParser::NewContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitBinaria(MinhaLinguagemParser::BinariaContext *ctx) override {
+  virtual std::any visitAtribuicaoVetor(MinhaLinguagemParser::AtribuicaoVetorContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -83,11 +91,39 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitGrupo(MinhaLinguagemParser::GrupoContext *ctx) override {
+  virtual std::any visitNewVetor(MinhaLinguagemParser::NewVetorContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitChamadaMetodo(MinhaLinguagemParser::ChamadaMetodoContext *ctx) override {
     return visitChildren(ctx);
   }
 
   virtual std::any visitString(MinhaLinguagemParser::StringContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitAtribuicaoMembro(MinhaLinguagemParser::AtribuicaoMembroContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFloat(MinhaLinguagemParser::FloatContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitNewObjeto(MinhaLinguagemParser::NewObjetoContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitAcessoMembro(MinhaLinguagemParser::AcessoMembroContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitBinaria(MinhaLinguagemParser::BinariaContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitGrupo(MinhaLinguagemParser::GrupoContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -103,7 +139,15 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitTipo_base(MinhaLinguagemParser::Tipo_baseContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitTipo(MinhaLinguagemParser::TipoContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitAnotacao(MinhaLinguagemParser::AnotacaoContext *ctx) override {
     return visitChildren(ctx);
   }
 

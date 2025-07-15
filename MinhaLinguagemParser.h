@@ -12,21 +12,23 @@
 class  MinhaLinguagemParser : public antlr4::Parser {
 public:
   enum {
-    T__0 = 1, PONTO_VIRGULA = 2, VIRGULA = 3, ABRE_PARENTESES = 4, FECHA_PARENTESES = 5, 
-    ABRE_CHAVES = 6, FECHA_CHAVES = 7, ATRIBUICAO = 8, ABRE_COLCHETES = 9, 
-    FECHA_COLCHETES = 10, MAIS = 11, MENOS = 12, MULT = 13, DIV = 14, MAIOR = 15, 
-    MAIOR_IGUAL = 16, MENOR = 17, MENOR_IGUAL = 18, IGUAL = 19, DIFERENTE = 20, 
-    E_LOGICO = 21, OU_LOGICO = 22, IF = 23, ELSE = 24, WHILE = 25, FOR = 26, 
-    CLASS = 27, RETURN = 28, INT = 29, FLOAT = 30, CHAR = 31, STRING = 32, 
-    VOID = 33, IDENTIFICADOR = 34, NUM_INT = 35, NUM_FLOAT = 36, TEXTO = 37, 
-    COMENTARIO = 38, COMENTARIO_BLOCO = 39, ESPACO = 40
+    T__0 = 1, T__1 = 2, PONTO_VIRGULA = 3, VIRGULA = 4, ABRE_PARENTESES = 5, 
+    FECHA_PARENTESES = 6, ABRE_CHAVES = 7, FECHA_CHAVES = 8, ATRIBUICAO = 9, 
+    ABRE_COLCHETES = 10, FECHA_COLCHETES = 11, PONTO = 12, DOIS_PONTOS = 13, 
+    PUBLIC = 14, PRIVATE = 15, PROTECTED = 16, STATIC = 17, STRING_TYPE = 18, 
+    OVERRIDE = 19, MAIS = 20, MENOS = 21, MULT = 22, DIV = 23, MAIOR = 24, 
+    MAIOR_IGUAL = 25, MENOR = 26, MENOR_IGUAL = 27, IGUAL = 28, DIFERENTE = 29, 
+    E_LOGICO = 30, OU_LOGICO = 31, IF = 32, ELSE = 33, WHILE = 34, FOR = 35, 
+    CLASS = 36, RETURN = 37, INT = 38, FLOAT = 39, CHAR = 40, STRING = 41, 
+    VOID = 42, IDENTIFICADOR = 43, NUM_INT = 44, NUM_FLOAT = 45, TEXTO = 46, 
+    COMENTARIO = 47, COMENTARIO_BLOCO = 48, ESPACO = 49
   };
 
   enum {
-    RulePrograma = 0, RuleDeclaracao_classe = 1, RuleMembro = 2, RuleDeclaracao_funcao = 3, 
-    RuleParametros = 4, RuleParametro = 5, RuleDeclaracao_variavel = 6, 
-    RuleBloco = 7, RuleDeclaracao = 8, RuleEstrutura_controle = 9, RuleExpressao = 10, 
-    RuleTipo = 11
+    RulePrograma = 0, RuleDeclaracao_classe = 1, RuleMembro = 2, RuleDeclaracao_construtor = 3, 
+    RuleDeclaracao_funcao = 4, RuleParametros = 5, RuleParametro = 6, RuleDeclaracao_variavel = 7, 
+    RuleBloco = 8, RuleDeclaracao = 9, RuleEstrutura_controle = 10, RuleExpressao = 11, 
+    RuleTipo_base = 12, RuleTipo = 13, RuleAnotacao = 14
   };
 
   explicit MinhaLinguagemParser(antlr4::TokenStream *input);
@@ -49,6 +51,7 @@ public:
   class ProgramaContext;
   class Declaracao_classeContext;
   class MembroContext;
+  class Declaracao_construtorContext;
   class Declaracao_funcaoContext;
   class ParametrosContext;
   class ParametroContext;
@@ -57,7 +60,9 @@ public:
   class DeclaracaoContext;
   class Estrutura_controleContext;
   class ExpressaoContext;
-  class TipoContext; 
+  class Tipo_baseContext;
+  class TipoContext;
+  class AnotacaoContext; 
 
   class  ProgramaContext : public antlr4::ParserRuleContext {
   public:
@@ -84,9 +89,14 @@ public:
     antlr4::tree::TerminalNode *CLASS();
     antlr4::tree::TerminalNode *ABRE_CHAVES();
     antlr4::tree::TerminalNode *FECHA_CHAVES();
-    antlr4::tree::TerminalNode *IDENTIFICADOR();
+    std::vector<antlr4::tree::TerminalNode *> IDENTIFICADOR();
+    antlr4::tree::TerminalNode* IDENTIFICADOR(size_t i);
+    antlr4::tree::TerminalNode *STATIC();
     std::vector<MembroContext *> membro();
     MembroContext* membro(size_t i);
+    antlr4::tree::TerminalNode *PUBLIC();
+    antlr4::tree::TerminalNode *PRIVATE();
+    antlr4::tree::TerminalNode *PROTECTED();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -100,7 +110,9 @@ public:
     MembroContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     Declaracao_variavelContext *declaracao_variavel();
+    AnotacaoContext *anotacao();
     Declaracao_funcaoContext *declaracao_funcao();
+    Declaracao_construtorContext *declaracao_construtor();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -108,6 +120,34 @@ public:
   };
 
   MembroContext* membro();
+
+  class  Declaracao_construtorContext : public antlr4::ParserRuleContext {
+  public:
+    Declaracao_construtorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> IDENTIFICADOR();
+    antlr4::tree::TerminalNode* IDENTIFICADOR(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ABRE_PARENTESES();
+    antlr4::tree::TerminalNode* ABRE_PARENTESES(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> FECHA_PARENTESES();
+    antlr4::tree::TerminalNode* FECHA_PARENTESES(size_t i);
+    BlocoContext *bloco();
+    ParametrosContext *parametros();
+    antlr4::tree::TerminalNode *DOIS_PONTOS();
+    antlr4::tree::TerminalNode *PUBLIC();
+    antlr4::tree::TerminalNode *PRIVATE();
+    antlr4::tree::TerminalNode *PROTECTED();
+    std::vector<ExpressaoContext *> expressao();
+    ExpressaoContext* expressao(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> VIRGULA();
+    antlr4::tree::TerminalNode* VIRGULA(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Declaracao_construtorContext* declaracao_construtor();
 
   class  Declaracao_funcaoContext : public antlr4::ParserRuleContext {
   public:
@@ -199,16 +239,53 @@ public:
   class  DeclaracaoContext : public antlr4::ParserRuleContext {
   public:
     DeclaracaoContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+   
+    DeclaracaoContext() = default;
+    void copyFrom(DeclaracaoContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
+
     virtual size_t getRuleIndex() const override;
-    Declaracao_variavelContext *declaracao_variavel();
-    Estrutura_controleContext *estrutura_controle();
+
+   
+  };
+
+  class  ExprStmtContext : public DeclaracaoContext {
+  public:
+    ExprStmtContext(DeclaracaoContext *ctx);
+
     ExpressaoContext *expressao();
     antlr4::tree::TerminalNode *PONTO_VIRGULA();
-    antlr4::tree::TerminalNode *RETURN();
-
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
+  };
+
+  class  VarDeclContext : public DeclaracaoContext {
+  public:
+    VarDeclContext(DeclaracaoContext *ctx);
+
+    Declaracao_variavelContext *declaracao_variavel();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ReturnStmtContext : public DeclaracaoContext {
+  public:
+    ReturnStmtContext(DeclaracaoContext *ctx);
+
+    antlr4::tree::TerminalNode *RETURN();
+    antlr4::tree::TerminalNode *PONTO_VIRGULA();
+    ExpressaoContext *expressao();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ControleDeclContext : public DeclaracaoContext {
+  public:
+    ControleDeclContext(DeclaracaoContext *ctx);
+
+    Estrutura_controleContext *estrutura_controle();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   DeclaracaoContext* declaracao();
@@ -232,12 +309,13 @@ public:
 
     antlr4::tree::TerminalNode *FOR();
     antlr4::tree::TerminalNode *ABRE_PARENTESES();
+    std::vector<antlr4::tree::TerminalNode *> PONTO_VIRGULA();
+    antlr4::tree::TerminalNode* PONTO_VIRGULA(size_t i);
+    antlr4::tree::TerminalNode *FECHA_PARENTESES();
+    BlocoContext *bloco();
     Declaracao_variavelContext *declaracao_variavel();
     std::vector<ExpressaoContext *> expressao();
     ExpressaoContext* expressao(size_t i);
-    antlr4::tree::TerminalNode *PONTO_VIRGULA();
-    antlr4::tree::TerminalNode *FECHA_PARENTESES();
-    BlocoContext *bloco();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
@@ -294,6 +372,84 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  AtribuicaoVetorContext : public ExpressaoContext {
+  public:
+    AtribuicaoVetorContext(ExpressaoContext *ctx);
+
+    std::vector<ExpressaoContext *> expressao();
+    ExpressaoContext* expressao(size_t i);
+    antlr4::tree::TerminalNode *ABRE_COLCHETES();
+    antlr4::tree::TerminalNode *FECHA_COLCHETES();
+    antlr4::tree::TerminalNode *ATRIBUICAO();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ChamadaFuncaoContext : public ExpressaoContext {
+  public:
+    ChamadaFuncaoContext(ExpressaoContext *ctx);
+
+    antlr4::tree::TerminalNode *IDENTIFICADOR();
+    antlr4::tree::TerminalNode *ABRE_PARENTESES();
+    antlr4::tree::TerminalNode *FECHA_PARENTESES();
+    std::vector<ExpressaoContext *> expressao();
+    ExpressaoContext* expressao(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> VIRGULA();
+    antlr4::tree::TerminalNode* VIRGULA(size_t i);
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  NewVetorContext : public ExpressaoContext {
+  public:
+    NewVetorContext(ExpressaoContext *ctx);
+
+    Tipo_baseContext *tipo_base();
+    antlr4::tree::TerminalNode *ABRE_COLCHETES();
+    ExpressaoContext *expressao();
+    antlr4::tree::TerminalNode *FECHA_COLCHETES();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ChamadaMetodoContext : public ExpressaoContext {
+  public:
+    ChamadaMetodoContext(ExpressaoContext *ctx);
+
+    std::vector<ExpressaoContext *> expressao();
+    ExpressaoContext* expressao(size_t i);
+    antlr4::tree::TerminalNode *PONTO();
+    antlr4::tree::TerminalNode *IDENTIFICADOR();
+    antlr4::tree::TerminalNode *ABRE_PARENTESES();
+    antlr4::tree::TerminalNode *FECHA_PARENTESES();
+    std::vector<antlr4::tree::TerminalNode *> VIRGULA();
+    antlr4::tree::TerminalNode* VIRGULA(size_t i);
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  StringContext : public ExpressaoContext {
+  public:
+    StringContext(ExpressaoContext *ctx);
+
+    antlr4::tree::TerminalNode *TEXTO();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  AtribuicaoMembroContext : public ExpressaoContext {
+  public:
+    AtribuicaoMembroContext(ExpressaoContext *ctx);
+
+    std::vector<ExpressaoContext *> expressao();
+    ExpressaoContext* expressao(size_t i);
+    antlr4::tree::TerminalNode *PONTO();
+    antlr4::tree::TerminalNode *IDENTIFICADOR();
+    antlr4::tree::TerminalNode *ATRIBUICAO();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  FloatContext : public ExpressaoContext {
   public:
     FloatContext(ExpressaoContext *ctx);
@@ -303,14 +459,28 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  class  NewContext : public ExpressaoContext {
+  class  NewObjetoContext : public ExpressaoContext {
   public:
-    NewContext(ExpressaoContext *ctx);
+    NewObjetoContext(ExpressaoContext *ctx);
 
-    TipoContext *tipo();
-    antlr4::tree::TerminalNode *ABRE_COLCHETES();
+    antlr4::tree::TerminalNode *IDENTIFICADOR();
+    antlr4::tree::TerminalNode *ABRE_PARENTESES();
+    antlr4::tree::TerminalNode *FECHA_PARENTESES();
+    std::vector<ExpressaoContext *> expressao();
+    ExpressaoContext* expressao(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> VIRGULA();
+    antlr4::tree::TerminalNode* VIRGULA(size_t i);
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  AcessoMembroContext : public ExpressaoContext {
+  public:
+    AcessoMembroContext(ExpressaoContext *ctx);
+
     ExpressaoContext *expressao();
-    antlr4::tree::TerminalNode *FECHA_COLCHETES();
+    antlr4::tree::TerminalNode *PONTO();
+    antlr4::tree::TerminalNode *IDENTIFICADOR();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
@@ -338,21 +508,6 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  class  ChamadaFuncaoContext : public ExpressaoContext {
-  public:
-    ChamadaFuncaoContext(ExpressaoContext *ctx);
-
-    antlr4::tree::TerminalNode *IDENTIFICADOR();
-    antlr4::tree::TerminalNode *ABRE_PARENTESES();
-    antlr4::tree::TerminalNode *FECHA_PARENTESES();
-    std::vector<ExpressaoContext *> expressao();
-    ExpressaoContext* expressao(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> VIRGULA();
-    antlr4::tree::TerminalNode* VIRGULA(size_t i);
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
   class  GrupoContext : public ExpressaoContext {
   public:
     GrupoContext(ExpressaoContext *ctx);
@@ -360,15 +515,6 @@ public:
     antlr4::tree::TerminalNode *ABRE_PARENTESES();
     ExpressaoContext *expressao();
     antlr4::tree::TerminalNode *FECHA_PARENTESES();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  StringContext : public ExpressaoContext {
-  public:
-    StringContext(ExpressaoContext *ctx);
-
-    antlr4::tree::TerminalNode *TEXTO();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
@@ -407,16 +553,31 @@ public:
 
   ExpressaoContext* expressao();
   ExpressaoContext* expressao(int precedence);
+  class  Tipo_baseContext : public antlr4::ParserRuleContext {
+  public:
+    Tipo_baseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *INT();
+    antlr4::tree::TerminalNode *FLOAT();
+    antlr4::tree::TerminalNode *CHAR();
+    antlr4::tree::TerminalNode *STRING();
+    antlr4::tree::TerminalNode *STRING_TYPE();
+    antlr4::tree::TerminalNode *IDENTIFICADOR();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Tipo_baseContext* tipo_base();
+
   class  TipoContext : public antlr4::ParserRuleContext {
   public:
     TipoContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *INT();
+    Tipo_baseContext *tipo_base();
     antlr4::tree::TerminalNode *ABRE_COLCHETES();
     antlr4::tree::TerminalNode *FECHA_COLCHETES();
-    antlr4::tree::TerminalNode *FLOAT();
-    antlr4::tree::TerminalNode *CHAR();
-    antlr4::tree::TerminalNode *STRING();
     antlr4::tree::TerminalNode *VOID();
 
 
@@ -425,6 +586,19 @@ public:
   };
 
   TipoContext* tipo();
+
+  class  AnotacaoContext : public antlr4::ParserRuleContext {
+  public:
+    AnotacaoContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *OVERRIDE();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  AnotacaoContext* anotacao();
 
 
   bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;

@@ -9,9 +9,22 @@
 #include <string>
 #include <set>
 #include <unordered_map>
+#include <any>
+#include <stdexcept>
 
 
 class SemanticoVisitor : public MinhaLinguagemBaseVisitor {
+
+private:
+    template<typename T>
+    T any_cast(const antlrcpp::Any& any) {
+        try {
+            return std::any_cast<T>(any);
+        } catch (const std::bad_any_cast&) {
+            throw std::runtime_error("Bad any cast");
+        }
+    }
+
 private:
     TabelaSimbolos& tabela; 
     TipoDado tipoRetornoAtual = TipoDado::VOID;
@@ -52,21 +65,21 @@ private:
     }
 
     std::string tipoParaString(TipoDado tipo) {
-        switch(tipo) {
-            case TipoDado::INT: return "int";
-            case TipoDado::FLOAT: return "float";
-            case TipoDado::CHAR: return "char";
-            case TipoDado::STRING: return "string";
-            case TipoDado::VOID: return "void";
-            case TipoDado::POINTER: return "pointer";
-            case TipoDado::VETOR_INT: return "int[]";
-            case TipoDado::VETOR_FLOAT: return "float[]";
-            case TipoDado::VETOR_CHAR: return "char[]";
-            case TipoDado::VETOR_STRING: return "string[]";
-            case TipoDado::CLASSE: return "classe"; // Simplified
-            default: return "invalido";
-        }
+    switch(tipo) {
+        case TipoDado::INT: return "int";
+        case TipoDado::FLOAT: return "float";
+        case TipoDado::CHAR: return "char";
+        case TipoDado::STRING: return "string";
+        case TipoDado::VOID: return "void";
+        case TipoDado::POINTER: return "pointer";
+        case TipoDado::VETOR_INT: return "int[]";
+        case TipoDado::VETOR_FLOAT: return "float[]";
+        case TipoDado::VETOR_CHAR: return "char[]";
+        case TipoDado::VETOR_STRING: return "string[]";
+        case TipoDado::CLASSE: return "classe"; // Isso será substituído pelo nome real da classe
+        default: return "invalido";
     }
+}
 
     bool tiposCompativeis(TipoDado t1, TipoDado t2, bool atribuicao = false) {
         // Casos de compatibilidade direta
@@ -117,15 +130,18 @@ private:
 
     // Função auxiliar para converter antlrcpp::Any para TipoDado
     TipoDado getTipoComo(antlrcpp::Any any) {
-        if (!any.has_value()) 
-            return TipoDado::INVALIDO;
-        
-        try {
-            return std::any_cast<TipoDado>(any);
-        } catch (const std::bad_any_cast&) {
-            return TipoDado::INVALIDO;
-        }
+    if (!any.has_value()) 
+        return TipoDado::INVALIDO;
+    
+    if (any.is<Simbolo>()) {
+        return any.as<Simbolo>().tipo;
     }
+    try {
+        return std::any_cast<TipoDado>(any);
+    } catch (const std::bad_any_cast&) {
+        return TipoDado::INVALIDO;
+    }
+}
 
     Simbolo* buscarMembroClasseRecursivo(
         const std::string& nomeClasse,
@@ -878,59 +894,48 @@ public:
     }
 
     antlrcpp::Any visitChamadaFuncao(MinhaLinguagemParser::ChamadaFuncaoContext* ctx) override {
-        std::string nome = ctx->IDENTIFICADOR()->getText();
-        Simbolo* simbolo = tabela.buscarSimbolo(nome);
-        
-        if (!simbolo || simbolo->categoria != Categoria::FUNCAO) {
-            reportarErro(ctx, "Função não declarada: '" + nome + "'");
-            return TipoDado::INVALIDO;
-        }
-        
-        auto args = ctx->expressao();
-        
-        // Verificação especial para printf/scanf (funções variádicas)
-        if (nome == "printf" || nome == "scanf") {
-            if (args.size() < 1) {
-                reportarErro(ctx, "Função '" + nome + "' requer pelo menos 1 argumento");
-            } else {
-                // Verificar primeiro argumento (string)
-                TipoDado tipoPrimeiro = getTipoComo(visit(args[0]));
-                if (tipoPrimeiro != TipoDado::STRING) {
-                    reportarErro(ctx, "Primeiro argumento de '" + nome + "' deve ser string");
-                }
-                
-                // Verificar demais argumentos (devem ser endereços)
-                for (size_t i = 1; i < args.size(); i++) {
-                    if (auto varCtx = dynamic_cast<MinhaLinguagemParser::VariavelContext*>(args[i])) {
-                        std::string varNome = varCtx->IDENTIFICADOR()->getText();
-                        Simbolo* varSimbolo = tabela.buscarSimbolo(varNome);
-                        
-                        if (!varSimbolo || varSimbolo->categoria != Categoria::VARIAVEL) {
-                            reportarErro(ctx, "Argumento " + std::to_string(i+1) + " deve ser variável");
-                        }
-                    } else {
-                        reportarErro(ctx, "Argumento " + std::to_string(i+1) + " deve ser variável (endereço)");
-                    }
-                }
-            }
-            return TipoDado::INT;
-        }
-        
-        // Verificação normal para outras funções
-        if (args.size() != simbolo->tiposParametros.size()) {
-            reportarErro(ctx, "Número incorreto de argumentos para '" + nome + "'");
-            return simbolo->tipo;
-        }
-        
-        for (size_t i = 0; i < args.size(); i++) {
-            TipoDado tipoArg = getTipoComo(visit(args[i]));
-            if (!tiposCompativeis(simbolo->tiposParametros[i], tipoArg)) {
-                reportarErro(ctx, "Tipo incorreto para argumento " + std::to_string(i+1));
+    std::string nome = ctx->IDENTIFICADOR()->getText();
+    Simbolo* simbolo = tabela.buscarSimbolo(nome);
+    
+    if (!simbolo || simbolo->categoria != Categoria::FUNCAO) {
+        reportarErro(ctx, "Função não declarada: '" + nome + "'");
+        return TipoDado::INVALIDO;
+    }
+    
+    auto args = ctx->expressao();
+    
+    // Verificação especial para printf/scanf
+    if (nome == "printf" || nome == "scanf") {
+        if (args.size() < 1) {
+            reportarErro(ctx, "Função '" + nome + "' requer pelo menos 1 argumento");
+        } else {
+            TipoDado tipoPrimeiro = getTipoComo(visit(args[0]));
+            if (tipoPrimeiro != TipoDado::STRING) {
+                reportarErro(ctx, "Primeiro argumento de '" + nome + "' deve ser string");
             }
         }
-        
+        return TipoDado::INT;
+    }
+    
+    // Verificação normal para outras funções
+    if (args.size() != simbolo->tiposParametros.size()) {
+        reportarErro(ctx, "Número incorreto de argumentos para '" + nome + "' (esperado " + 
+                      std::to_string(simbolo->tiposParametros.size()) + ", encontrado " + 
+                      std::to_string(args.size()) + ")");
         return simbolo->tipo;
     }
+    
+    for (size_t i = 0; i < args.size(); i++) {
+        TipoDado tipoArg = getTipoComo(visit(args[i]));
+        if (!tiposCompativeis(simbolo->tiposParametros[i], tipoArg)) {
+            reportarErro(ctx, "Tipo incorreto para argumento " + std::to_string(i+1) + 
+                        " (esperado " + tipoParaString(simbolo->tiposParametros[i]) + 
+                        ", encontrado " + tipoParaString(tipoArg) + ")");
+        }
+    }
+    
+    return simbolo->tipo;
+}
 
     antlrcpp::Any visitAcessoVetor(MinhaLinguagemParser::AcessoVetorContext* ctx) override {
         std::string nome = ctx->IDENTIFICADOR()->getText();
@@ -977,56 +982,56 @@ public:
     }
 
     antlrcpp::Any visitNewObjeto(MinhaLinguagemParser::NewObjetoContext* ctx) override {
-        std::string nomeClasse = ctx->IDENTIFICADOR()->getText();
-        Simbolo* classe = tabela.buscarSimbolo(nomeClasse);
-        
-        if (!classe || classe->tipo != TipoDado::CLASSE) {
-            reportarErro(ctx, "Classe não definida: '" + nomeClasse + "'");
-            return TipoDado::INVALIDO;
-        }
-        
-        // Usar membros da classe diretamente
-        const std::vector<Simbolo>& membros = classe->membros;
+    std::string nomeClasse = ctx->IDENTIFICADOR()->getText();
+    Simbolo* classe = tabela.buscarSimbolo(nomeClasse);
+    
+    if (!classe || classe->tipo != TipoDado::CLASSE) {
+        reportarErro(ctx, "Classe não definida: '" + nomeClasse + "'");
+        return TipoDado::INVALIDO;
+    }
+    
+    // Coletar tipos dos argumentos
+    std::vector<TipoDado> tiposArg;
+    for (auto expr : ctx->expressao()) {
+        tiposArg.push_back(getTipoComo(visit(expr)));
+    }
 
-        // Buscar na tabela de membros da classe
-        auto it = membrosClasses.find(nomeClasse);
-        if (it == membrosClasses.end()) {
-            reportarErro(ctx, "Classe '" + nomeClasse + "' não tem membros registrados");
-            return TipoDado::INVALIDO;
-        }
-
-        std::vector<TipoDado> tiposArg;
-        for (auto expr : ctx->expressao()) {
-            tiposArg.push_back(getTipoComo(visit(expr)));
-        }
-
-        bool construtorEncontrado = false;
-        for (const Simbolo& membro : it->second) {
-            if (membro.tipo == TipoDado::CONSTRUTOR) {
-                // Verificar compatibilidade de parâmetros
-                if (membro.tiposParametros.size() == tiposArg.size()) {
-                    bool compativel = true;
-                    for (size_t i = 0; i < tiposArg.size(); i++) {
-                        if (!tiposCompativeis(membro.tiposParametros[i], tiposArg[i])) {
-                            compativel = false;
-                            break;
-                        }
-                    }
-                    if (compativel) {
-                        construtorEncontrado = true;
+    // Verificar construtores
+    bool construtorCompativel = false;
+    for (const Simbolo& membro : classe->membros) {
+        if (membro.tipo == TipoDado::CONSTRUTOR && membro.nome == nomeClasse) {
+            if (membro.tiposParametros.size() == tiposArg.size()) {
+                bool compativel = true;
+                for (size_t i = 0; i < tiposArg.size(); i++) {
+                    if (!tiposCompativeis(membro.tiposParametros[i], tiposArg[i])) {
+                        compativel = false;
                         break;
                     }
                 }
+                if (compativel) {
+                    construtorCompativel = true;
+                    break;
+                }
             }
         }
-
-        if (!construtorEncontrado) {
-            reportarErro(ctx, "Nenhum construtor compatível encontrado para '" + nomeClasse + "'");
-        }
-
-        // Retornar tipo da classe instanciada
-        return TipoDado::CLASSE;
     }
+
+    if (!construtorCompativel) {
+        std::string msg = "Nenhum construtor compatível encontrado para '" + nomeClasse + "' (esperado: (";
+        for (size_t i = 0; i < tiposArg.size(); i++) {
+            if (i > 0) msg += ", ";
+            msg += tipoParaString(tiposArg[i]);
+        }
+        msg += "))";
+        reportarErro(ctx, msg);
+    }
+
+    // Retorna um Simbolo representando a instância da classe
+    Simbolo instancia;
+    instancia.tipo = TipoDado::CLASSE;
+    instancia.nomeClasse = nomeClasse;
+    return instancia;
+}
 
     antlrcpp::Any visitInteiro(MinhaLinguagemParser::InteiroContext* ctx) override {
         return TipoDado::INT;
@@ -1074,31 +1079,63 @@ public:
     // }
 
     antlrcpp::Any visitAcessoMembro(MinhaLinguagemParser::AcessoMembroContext* ctx) override {
-        TipoDado tipoExpr = getTipoComo(visit(ctx->expressao()));
-        
-        if (tipoExpr != TipoDado::CLASSE) {
-            reportarErro(ctx, "Acesso a membro em tipo não-classe");
-            return TipoDado::INVALIDO;
-        }
-        
-        std::string nomeMembro = ctx->IDENTIFICADOR()->getText();
-        
-        // Obter classe real do objeto
-        Simbolo* simboloExpr = tabela.buscarSimbolo(ctx->expressao()->getText());
-        if (!simboloExpr) {
-            reportarErro(ctx, "Símbolo não encontrado: " + ctx->expressao()->getText());
-            return TipoDado::INVALIDO;
-        }
-        
-        Simbolo* simboloMembro = buscarMembroClasse(simboloExpr->nomeClasse, nomeMembro);
-        
-        if (!simboloMembro) {
-            reportarErro(ctx, "Membro '" + nomeMembro + "' não existe");
-            return TipoDado::INVALIDO;
-        }
-        
-        return simboloMembro->tipo;
+    // Primeiro visita a expressão para obter o tipo do objeto
+    TipoDado tipoExpr = getTipoComo(visit(ctx->expressao()));
+    
+    if (tipoExpr != TipoDado::CLASSE) {
+        reportarErro(ctx, "Acesso a membro em tipo não-classe");
+        return TipoDado::INVALIDO;
     }
+    
+    std::string nomeMembro = ctx->IDENTIFICADOR()->getText();
+    
+    // Obter o símbolo da variável que está sendo acessada
+    if (auto varCtx = dynamic_cast<MinhaLinguagemParser::VariavelContext*>(ctx->expressao())) {
+        std::string varNome = varCtx->IDENTIFICADOR()->getText();
+        Simbolo* varSimbolo = tabela.buscarSimbolo(varNome);
+        
+        if (!varSimbolo) {
+            reportarErro(ctx, "Variável '" + varNome + "' não declarada");
+            return TipoDado::INVALIDO;
+        }
+        
+        // Buscar membro na classe
+        Simbolo* classe = tabela.buscarSimbolo(varSimbolo->nomeClasse);
+        if (!classe) {
+            reportarErro(ctx, "Classe '" + varSimbolo->nomeClasse + "' não encontrada");
+            return TipoDado::INVALIDO;
+        }
+        
+        // Buscar membro na hierarquia de classes
+        Simbolo* membro = nullptr;
+        std::string classeAtual = varSimbolo->nomeClasse;
+        
+        while (!classeAtual.empty()) {
+            Simbolo* classeAtualSimbolo = tabela.buscarSimbolo(classeAtual);
+            if (!classeAtualSimbolo) break;
+            
+            for (Simbolo& m : classeAtualSimbolo->membros) {
+                if (m.nome == nomeMembro) {
+                    membro = &m;
+                    break;
+                }
+            }
+            
+            if (membro) break;
+            classeAtual = classeAtualSimbolo->nomeSuperClasse;
+        }
+        
+        if (!membro) {
+            reportarErro(ctx, "Membro '" + nomeMembro + "' não existe na classe '" + varSimbolo->nomeClasse + "'");
+            return TipoDado::INVALIDO;
+        }
+        
+        return membro->tipo;
+    }
+    
+    reportarErro(ctx, "Expressão complexa não suportada em acesso a membro");
+    return TipoDado::INVALIDO;
+}
 
     antlrcpp::Any visitChamadaMetodo(MinhaLinguagemParser::ChamadaMetodoContext* ctx) override {
         // Corrigir: usar getTipoComo para converter o resultado
