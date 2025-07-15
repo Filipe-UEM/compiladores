@@ -36,8 +36,9 @@ struct Simbolo {
     Simbolo() = default;
 
     // Construtor para variáveis
-    Simbolo(std::string nome, TipoDado tipo, Categoria cat, bool isVetor, int nivel)
-        : nome(nome), tipo(tipo), categoria(cat), isVetor(isVetor), nivelEscopo(nivel) {}
+    Simbolo(std::string nome, TipoDado tipo, Categoria cat, bool isVetor, int nivel, std::string nomeClasse = "")
+        : nome(nome), tipo(tipo), categoria(cat), isVetor(isVetor), 
+          nivelEscopo(nivel), nomeClasse(nomeClasse) {}
     
     // Construtor para classes
     Simbolo(std::string nome, std::string nomeClasse, int nivel)
@@ -47,8 +48,8 @@ struct Simbolo {
     // Construtor para funções
     Simbolo(std::string nome, TipoDado tipo, std::vector<TipoDado> params, int nivel)
         : nome(nome), tipo(tipo), categoria(Categoria::FUNCAO), isVetor(false),
-          nivelEscopo(nivel), tiposParametros(params) {}
+          nivelEscopo(nivel), tiposParametros(params) {
+            categoria = Categoria::FUNCAO;
+        }
 
-    Simbolo(std::string n, TipoDado t, int nivel) 
-        : nome(n), tipo(t), nivelEscopo(nivel) {}
 };

@@ -26,7 +26,7 @@ SRC_FILES = $(SRC_DIR)/main.cpp \
 all: $(TARGET)
 
 generate: $(GRAMMAR)
-	$(ANTLR_CMD) -Dlanguage=Cpp -visitor -no-listener $(GRAMMAR)
+	$(ANTLR_CMD) -Dlanguage=Cpp -visitor $(GRAMMAR)
 	touch $(GENERATED)
 
 $(TARGET): generate $(SRC_FILES)
@@ -36,5 +36,5 @@ run: $(TARGET)
     LD_LIBRARY_PATH=/usr/local/lib ./$(TARGET) $(EXAMPLES_DIR)/Pessoa.txt $(EXAMPLES_DIR)/Estudante.txt $(EXAMPLES_DIR)/Programa.txt
 
 clean:
-	rm -f $(GENERATED) *.tokens *.interp $(TARGET) MinhaLinguagem*.h
+	rm -f $(GENERATED) *.tokens *.interp $(TARGET) MinhaLinguagem*.h MinhaLinguagemBaseListener.cpp MinhaLinguagemListener.cpp
 	find $(SRC_DIR) -name "*.o" -delete

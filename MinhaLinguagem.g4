@@ -15,10 +15,10 @@ membro
 // Regra do construtor:
 declaracao_construtor
     : (PUBLIC|PRIVATE|PROTECTED)? IDENTIFICADOR '(' parametros? ')' 
-      (DOIS_PONTOS IDENTIFICADOR '(' (expressao (',' expressao)*)? ')')? // Chamada de superclasse
+      (DOIS_PONTOS IDENTIFICADOR '(' (expressao (',' expressao)*)? ')')? 
       bloco
     ;
-
+    
 declaracao_funcao
     : tipo ID=IDENTIFICADOR '(' parametros? ')' bloco
     ;
@@ -32,7 +32,10 @@ parametro
     ;
 
 declaracao_variavel
-    : tipo ID=IDENTIFICADOR ('[' expressao? ']')? ('=' expressao)? ';'  
+    : (PUBLIC | PRIVATE | PROTECTED)?
+      tipo ID=IDENTIFICADOR 
+      ('[' expressao? ']')? 
+      ('=' expressao)? ';'  
     ;
 
 bloco

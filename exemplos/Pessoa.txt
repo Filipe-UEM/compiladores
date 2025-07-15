@@ -6,4 +6,8 @@ public class Pessoa {
         nome = n;
         idade = i;
     }
+
+    void exibir() {
+        print("Nome: " + nome + ", Idade: " + idade);
+    }
 }

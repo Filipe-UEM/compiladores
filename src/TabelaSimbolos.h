@@ -41,14 +41,13 @@ public:
     }
 
     Simbolo* buscarSimbolo(const std::string& nome) {
-        // Busca segura em todos os escopos
         for (auto it = escopos.rbegin(); it != escopos.rend(); ++it) {
             auto found = it->find(nome);
             if (found != it->end()) {
-                return &(found->second); // Retorna cópia segura
+                return &(found->second);
             }
         }
-        return nullptr; // Não encontrado
+        return nullptr;
     }
 
     // Busca apenas no escopo atual

@@ -6,8 +6,30 @@
 #include "MinhaLinguagemParser.h"
 #include "SemanticoVisitor.h"
 #include "ColetorClasses.h"
+// Add this include
+#include "MinhaLinguagemBaseListener.h"
 
 using namespace antlr4;
+
+class SyntaxErrorListener : public antlr4::BaseErrorListener {
+public:
+    void syntaxError(
+        antlr4::Recognizer *recognizer,
+        antlr4::Token *offendingSymbol,
+        size_t line, size_t charPositionInLine,
+        const std::string &msg, std::exception_ptr e
+    ) override {
+        std::cerr << "[SINTAXE] Linha " << line << ":" << charPositionInLine
+                  << " - " << msg << std::endl;
+    }
+};
+
+class SimpleTreeListener : public MinhaLinguagemBaseListener {
+public:
+    void enterEveryRule(antlr4::ParserRuleContext *ctx) override {
+        std::cout << ctx->getText() << std::endl;
+    }
+};
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -17,6 +39,7 @@ int main(int argc, char* argv[]) {
 
     TabelaSimbolos tabelaGlobal;
     std::vector<std::string> errosTotais;
+    SyntaxErrorListener errorListener; // Movido para cá
     
     // 1ª Passagem: Coletar classes
     for (int i = 1; i < argc; ++i) {
@@ -32,10 +55,14 @@ int main(int argc, char* argv[]) {
         MinhaLinguagemParser parser(&tokens);
         
         parser.removeErrorListeners();
-        parser.addErrorListener(new antlr4::BaseErrorListener());
+        parser.addErrorListener(&errorListener); // Usando nosso listener
         
         MinhaLinguagemParser::ProgramaContext* tree = parser.programa();
-        
+
+        // Imprimir árvore sintática
+        SimpleTreeListener listener;
+        antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
+
         if (parser.getNumberOfSyntaxErrors() > 0) {
             std::cerr << "[FALHA] Erros sintáticos em " << argv[i] << "\n";
             return 1;
@@ -56,10 +83,14 @@ int main(int argc, char* argv[]) {
         MinhaLinguagemParser parser(&tokens);
         
         parser.removeErrorListeners();
-        parser.addErrorListener(new BaseErrorListener());
+        parser.addErrorListener(&errorListener); // Usando nosso listener
         
         MinhaLinguagemParser::ProgramaContext* tree = parser.programa();
-        
+
+        // Imprimir árvore sintática novamente
+        SimpleTreeListener listener;
+        antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
+
         if (parser.getNumberOfSyntaxErrors() == 0) {
             SemanticoVisitor semantico(tabelaGlobal);
             semantico.visitPrograma(tree);

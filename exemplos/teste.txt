@@ -1,5 +1,0 @@
-void main() {
-    Pessoa p = new Pessoa("Ana", 30);
-    Estudante e = new Estudante();
-    e.curso = "Computação";
-}

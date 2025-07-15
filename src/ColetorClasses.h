@@ -9,7 +9,17 @@ private:
     
 public:
     ColetorClasses(TabelaSimbolos& tabela) : tabela(tabela) {}
-    
+
+    TipoDado converterParaTipoVetorial(TipoDado base) {
+    switch(base) {
+        case TipoDado::INT: return TipoDado::VETOR_INT;
+        case TipoDado::FLOAT: return TipoDado::VETOR_FLOAT;
+        case TipoDado::CHAR: return TipoDado::VETOR_CHAR;
+        case TipoDado::STRING: return TipoDado::VETOR_STRING;
+        default: return base;
+        }
+    }
+  
     antlrcpp::Any visitDeclaracao_classe(MinhaLinguagemParser::Declaracao_classeContext* ctx) override {
         
         if (!ctx->ID) {
@@ -32,31 +42,40 @@ public:
         
         // Coletar construtores e membros
         std::vector<Simbolo> membros;
-        for (auto membroCtx : ctx->membro()) {
-            // Coletar variáveis membro
-            if (auto varCtx = dynamic_cast<MinhaLinguagemParser::Declaracao_variavelContext*>(membroCtx)) {
-                std::string nomeMembro = varCtx->ID->getText();
-                std::string tipoStr = varCtx->tipo()->getText();
-                bool isVetor = (varCtx->ABRE_COLCHETES() != nullptr);
                 
-                TipoDado tipo = stringParaTipo(tipoStr);
-                if (isVetor) {
-                    // Converter para tipo vetorial
-                    if (tipo == TipoDado::INT) tipo = TipoDado::VETOR_INT;
-                    else if (tipo == TipoDado::FLOAT) tipo = TipoDado::VETOR_FLOAT;
-                    else if (tipo == TipoDado::CHAR) tipo = TipoDado::VETOR_CHAR;
-                    else if (tipo == TipoDado::STRING) tipo = TipoDado::VETOR_STRING;
+        // Herdar apenas membros não construtores
+        if (!superClasse.empty()) {
+            Simbolo* superSimbolo = tabela.buscarSimbolo(superClasse);
+            if (superSimbolo) {
+                for (const Simbolo& membroSuper : superSimbolo->membros) {
+                    // Pular construtores na herança
+                    if (membroSuper.tipo != TipoDado::CONSTRUTOR) {
+                        membros.push_back(membroSuper);
+                    }
+                }
+            }
+        }
+
+        for (auto membroCtx : ctx->membro()) {
+            // Processar construtores
+            if (auto constrCtx = dynamic_cast<MinhaLinguagemParser::Declaracao_construtorContext*>(membroCtx)) {
+                std::string nomeConstr = constrCtx->IDENTIFICADOR(0)->getText();
+                std::vector<TipoDado> tiposParam;
+                
+                if (constrCtx->parametros()) {
+                    for (auto param : constrCtx->parametros()->parametro()) {
+                        tiposParam.push_back(stringParaTipo(param->tipo()->getText()));
+                    }
                 }
                 
                 membros.push_back(Simbolo{
-                    nomeMembro,
-                    tipo,
-                    Categoria::VARIAVEL,
-                    isVetor,
+                    nomeConstr,
+                    TipoDado::CONSTRUTOR,
+                    tiposParam,
                     tabela.getNivelAtual()
                 });
             }
-            // Coletar métodos
+            // Processar funções
             else if (auto funcCtx = dynamic_cast<MinhaLinguagemParser::Declaracao_funcaoContext*>(membroCtx)) {
                 std::string nomeMetodo = funcCtx->ID->getText();
                 TipoDado tipoRetorno = stringParaTipo(funcCtx->tipo()->getText());
@@ -75,40 +94,33 @@ public:
                     tabela.getNivelAtual()
                 });
             }
-            // Coletar construtores
-            if (auto constrCtx = dynamic_cast<MinhaLinguagemParser::Declaracao_construtorContext*>(membroCtx)) {
-                std::string nomeConstr = constrCtx->IDENTIFICADOR(0)->getText();
+            // Processar variáveis
+            else if (auto varCtx = dynamic_cast<MinhaLinguagemParser::Declaracao_variavelContext*>(membroCtx)) {
+                std::string nomeMembro = varCtx->ID->getText();
+                std::string tipoStr = varCtx->tipo()->getText();
+                bool isVetor = (varCtx->ABRE_COLCHETES() != nullptr);
                 
-                std::vector<TipoDado> tiposParam;
-                if (constrCtx->parametros()) {
-                    for (auto param : constrCtx->parametros()->parametro()) {
-                        tiposParam.push_back(stringParaTipo(param->tipo()->getText()));
-                    }
+                TipoDado tipo;
+                if (isVetor) {
+                    tipo = converterParaTipoVetorial(stringParaTipo(tipoStr));
+                } else {
+                    tipo = stringParaTipo(tipoStr);
                 }
                 
-                // Criar símbolo de construtor
-                Simbolo construtor(
-                    nomeConstr,
-                    TipoDado::CONSTRUTOR,
-                    tiposParam,
+                Simbolo s{
+                    nomeMembro,
+                    tipo,
+                    Categoria::VARIAVEL,
+                    isVetor,
                     tabela.getNivelAtual()
-                );
-                construtor.categoria = Categoria::FUNCAO;
+                };
                 
-                membros.push_back(construtor);
-            }
-        }
-        
-        // Herdar membros da superclasse se existir
-        if (!superClasse.empty()) {
-            Simbolo* superSimbolo = tabela.buscarSimbolo(superClasse);
-            if (superSimbolo) {
-                for (const Simbolo& membroSuper : superSimbolo->membros) {
-                    // Não herdar construtores
-                    if (membroSuper.tipo != TipoDado::CONSTRUTOR) {
-                        membros.push_back(membroSuper);
-                    }
+                // Armazenar nome da classe se for tipo classe
+                if (tipo == TipoDado::CLASSE) {
+                    s.nomeClasse = tipoStr;
                 }
+                
+                membros.push_back(s);
             }
         }
 

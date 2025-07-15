@@ -1,7 +1,15 @@
-public class Estudante extends Pessoa {
+public class Estudante {
+    string nome;
+    int idade;
     string curso;
 
-    Estudante(string n, int i, string c) : Pessoa(n, i) {
+    Estudante(string n, int i, string c) {
+        nome = n;
+        idade = i;
         curso = c;
+    }
+
+    void exibir() {
+        print("Nome: " + nome + ", Idade: " + idade + ", Curso: " + curso);
     }
 }
