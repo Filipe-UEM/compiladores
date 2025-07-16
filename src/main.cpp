@@ -6,8 +6,11 @@
 #include "MinhaLinguagemParser.h"
 #include "SemanticoVisitor.h"
 #include "ColetorClasses.h"
-// Add this include
+#include "LLVMGenerator.h"
+#include "MinhaLinguagemListener.h"
 #include "MinhaLinguagemBaseListener.h"
+#include "antlr4-runtime/tree/ParseTreeWalker.h"
+#include <llvm/Support/FileSystem.h>  
 
 using namespace antlr4;
 
@@ -39,7 +42,7 @@ int main(int argc, char* argv[]) {
 
     TabelaSimbolos tabelaGlobal;
     std::vector<std::string> errosTotais;
-    SyntaxErrorListener errorListener; // Movido para cá
+    SyntaxErrorListener errorListener;
     
     // 1ª Passagem: Coletar classes
     for (int i = 1; i < argc; ++i) {
@@ -55,7 +58,7 @@ int main(int argc, char* argv[]) {
         MinhaLinguagemParser parser(&tokens);
         
         parser.removeErrorListeners();
-        parser.addErrorListener(&errorListener); // Usando nosso listener
+        parser.addErrorListener(&errorListener);
         
         MinhaLinguagemParser::ProgramaContext* tree = parser.programa();
 
@@ -83,7 +86,7 @@ int main(int argc, char* argv[]) {
         MinhaLinguagemParser parser(&tokens);
         
         parser.removeErrorListeners();
-        parser.addErrorListener(&errorListener); // Usando nosso listener
+        parser.addErrorListener(&errorListener);
         
         MinhaLinguagemParser::ProgramaContext* tree = parser.programa();
 
@@ -101,16 +104,45 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // 3ª Passagem: Geração de código LLVM
+    LLVMGenerator llvmGenerator(tabelaGlobal);
+    for (int i = 1; i < argc; ++i) {
+        std::ifstream stream(argv[i]);
+        if (!stream.is_open()) continue;
+        
+        ANTLRInputStream input(stream);
+        MinhaLinguagemLexer lexer(&input);
+        CommonTokenStream tokens(&lexer);
+        MinhaLinguagemParser parser(&tokens);
+        
+        MinhaLinguagemParser::ProgramaContext* tree = parser.programa();
+        llvmGenerator.visitPrograma(tree);
+    }
+
+    // Salvar em arquivo
+    std::error_code EC;
+    llvm::raw_fd_ostream output("output.ll", EC, llvm::sys::fs::OF_None);
+    if (!EC) {
+        llvmGenerator.getModule()->print(output, nullptr);
+        output.close();
+        std::cout << "Código LLVM salvo em output.ll\n";
+    } else {
+        std::cerr << "Erro ao salvar arquivo LLVM: " << EC.message() << "\n";
+    }
+
+    // Também imprima na saída padrão
+    llvmGenerator.getModule()->print(llvm::outs(), nullptr);
+
     // Reportar erros
     for (const auto& erro : errosTotais) {
         std::cerr << erro << std::endl;
     }
 
-    if (!errosTotais.empty()) {
-        std::cerr << "\n[FALHA] " << errosTotais.size() << " erros\n";
-        return 1;
+    if (errosTotais.empty()) {
+        std::cout << "[SUCESSO] Programa correto!\n";
+    } else {
+        std::cout << "[FALHA] Programa com erros semânticos!\n";
     }
 
-    std::cout << "[SUCESSO] Programa correto!\n";
     return 0;
 }

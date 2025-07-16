@@ -275,6 +275,12 @@ public:
         nivel--;
         return nullptr;
     }
+
+    antlrcpp::Any visitCharLiteral(MinhaLinguagemParser::CharLiteralContext* ctx) override {
+        std::string text = ctx->getText();
+        char val = text[1]; // Extract char from 'a'
+        // Handle special cases and return appropriate value
+    }
     
     // Expressão: chamada de função
     antlrcpp::Any visitChamadaFuncao(MinhaLinguagemParser::ChamadaFuncaoContext *ctx) override {

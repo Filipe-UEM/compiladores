@@ -1,0 +1,5 @@
+class Programa {
+    void main() {
+        int x = 42;
+    }
+}

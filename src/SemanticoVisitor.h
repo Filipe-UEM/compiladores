@@ -11,13 +11,16 @@
 #include <unordered_map>
 
 
-class SemanticoVisitor : public MinhaLinguagemBaseVisitor {
+class SemanticoVisitor :
+    public MinhaLinguagemBaseVisitor {
+
 private:
     TabelaSimbolos& tabela; 
     TipoDado tipoRetornoAtual = TipoDado::VOID;
     std::vector<std::string> erros;
     std::unordered_map<std::string, std::vector<Simbolo>> membrosClasses;
     std::string classeAtual = "";
+    std::string currentClassName = "";
     bool emLoop = false;
     bool emFuncao = false;
     bool emConstrutor = false; 
@@ -49,6 +52,16 @@ private:
         if (tipoStr.find("string[]") != std::string::npos) return TipoDado::VETOR_STRING;
         
         return TipoDado::CLASSE;
+    }
+
+    TipoDado converterTipoVetorialParaBase(TipoDado vetorial) {
+        switch(vetorial) {
+            case TipoDado::VETOR_INT: return TipoDado::INT;
+            case TipoDado::VETOR_FLOAT: return TipoDado::FLOAT;
+            case TipoDado::VETOR_CHAR: return TipoDado::CHAR;
+            case TipoDado::VETOR_STRING: return TipoDado::STRING;
+            default: return vetorial;
+        }
     }
 
     std::string tipoParaString(TipoDado tipo) {
@@ -88,7 +101,23 @@ private:
             
             return false;
         }
+
+        // Adicionar conversões numéricas
+        if ((t1 == TipoDado::INT || t1 == TipoDado::FLOAT || t1 == TipoDado::CHAR) &&
+            (t2 == TipoDado::INT || t2 == TipoDado::FLOAT || t2 == TipoDado::CHAR)) {
+            return true;
+        }
         
+        // Vetores do mesmo tipo
+        if (t1 >= TipoDado::VETOR_INT && t1 == t2) {
+            return true;
+        }
+        
+        // char → string
+        if (t1 == TipoDado::STRING && t2 == TipoDado::CHAR) {
+            return true;
+        }
+
         // Conversões implícitas permitidas em operações
         if (t1 == TipoDado::FLOAT && t2 == TipoDado::INT) return true;
         if (t1 == TipoDado::INT && t2 == TipoDado::FLOAT) return true;
@@ -221,150 +250,55 @@ public:
     }
 
     antlrcpp::Any visitDeclaracao_classe(MinhaLinguagemParser::Declaracao_classeContext* ctx) override {
-        
-        if (!ctx->ID) {
-            reportarErro(ctx, "Declaração de classe inválida (sem nome)");
-            return nullptr;
-        }        
-        
-        std::string nome = ctx->ID->getText();
+        std::string className = ctx->ID->getText();
+        currentClassName = className;
         std::string superClasse = "";
+        
         if (ctx->IDENTIFICADOR().size() > 1) {
             superClasse = ctx->IDENTIFICADOR(1)->getText();
-        }    
-
-        classeAtual = nome;
-        Simbolo* simboloClasse = tabela.buscarSimbolo(nome);
-        if (simboloClasse) {
-        membrosClasses[nome] = simboloClasse->membros;
-        }   
-        
-        if (ctx->IDENTIFICADOR().size() > 1) {
-            std::string nomeSuperClasse = ctx->IDENTIFICADOR(1)->getText();
-            Simbolo* simboloSuper = tabela.buscarSimbolo(nomeSuperClasse);
-            
-            if (!simboloSuper) {
-                reportarErro(ctx, "Superclasse não encontrada: " + nomeSuperClasse);
-            } else if (simboloSuper->tipo != TipoDado::CLASSE) {
-                reportarErro(ctx, nomeSuperClasse + " não é uma classe");
-            } else {
-                // Herdar membros da superclasse
-                auto it = membrosClasses.find(nomeSuperClasse);
-                if (it != membrosClasses.end()) {
-                    for (const auto& membro : it->second) {
-                        membrosClasses[nome].push_back(membro);
-                    }
-                }
-            }
         }
-        
-        if (tabela.buscarNoEscopoAtual(nome)) {
-            reportarErro(ctx, "Classe '" + nome + "' já declarada");
-            return nullptr;
-        }
-    
-        tabela.inserirSimbolo(Simbolo{
-            nome, 
-            TipoDado::CLASSE, 
-            Categoria::CLASSE, 
-            false, 
-            tabela.getNivelAtual()
-        });
-    
-        // Preparar para coletar membros
-        std::vector<Simbolo> membros;
-        tabela.entrarEscopo();
 
+        // Semantic checks only
+        if (!superClasse.empty() && !tabela.buscarSimbolo(superClasse)) {
+            reportarErro(ctx, "Superclasse não encontrada: " + superClasse);
+        }
+
+        // Check for duplicate class
+        if (tabela.buscarSimbolo(className)) {
+            reportarErro(ctx, "Classe duplicada: " + className);
+        } else {
+            // Insert class symbol
+            Simbolo simboloClasse;
+            simboloClasse.nome = className;
+            simboloClasse.tipo = TipoDado::CLASSE;
+            simboloClasse.categoria = Categoria::CLASSE;
+            simboloClasse.nivelEscopo = tabela.getNivelAtual();
+            simboloClasse.nomeSuperClasse = superClasse;
+            tabela.inserirSimbolo(simboloClasse);
+        }
+
+        // Process members
         for (auto membroCtx : ctx->membro()) {
-            // Processar construtores
-            if (auto constrCtx = dynamic_cast<MinhaLinguagemParser::Declaracao_construtorContext*>(membroCtx)) {
-                std::string nomeConstr = constrCtx->IDENTIFICADOR(0)->getText();
-                std::vector<TipoDado> tiposParam;
-                
-                if (constrCtx->parametros()) {
-                    for (auto param : constrCtx->parametros()->parametro()) {
-                        tiposParam.push_back(stringParaTipo(param->tipo()->getText()));
-                    }
-                }
-                
-                membros.push_back(Simbolo{
-                    nomeConstr,
-                    TipoDado::CONSTRUTOR,
-                    tiposParam,
-                    tabela.getNivelAtual()
-                });
-            }
-
-            // Processar funções
-            else if (auto funcCtx = dynamic_cast<MinhaLinguagemParser::Declaracao_funcaoContext*>(membroCtx)) {
-                std::string nomeMetodo = funcCtx->ID->getText();
-                TipoDado tipoRetorno = stringParaTipo(funcCtx->tipo()->getText());
-                
-                std::vector<TipoDado> tiposParam;
-                if (funcCtx->parametros()) {
-                    for (auto param : funcCtx->parametros()->parametro()) {
-                        tiposParam.push_back(stringParaTipo(param->tipo()->getText()));
-                    }
-                }
-                
-                membros.push_back(Simbolo{
-                    nomeMetodo,
-                    tipoRetorno,
-                    tiposParam,
-                    tabela.getNivelAtual()
-                });
-            }
-
-            // Processar variáveis
-            else if (auto varCtx = dynamic_cast<MinhaLinguagemParser::Declaracao_variavelContext*>(membroCtx)) {
-                std::string nomeMembro = varCtx->ID->getText();
-                std::string tipoStr = varCtx->tipo()->getText();
-                bool isVetor = (varCtx->ABRE_COLCHETES() != nullptr);
-                
-                TipoDado tipo;
-                if (isVetor) {
-                    tipo = converterParaTipoVetorial(stringParaTipo(tipoStr));
-                } else {
-                    tipo = stringParaTipo(tipoStr);
-                }
-                
-                membros.push_back(Simbolo{
-                    nomeMembro,
-                    tipo,
-                    Categoria::VARIAVEL,
-                    isVetor,
-                    tabela.getNivelAtual()
-                });
-            }
-        }
-
-        tabela.sairEscopo();
-        
-        // Armazenar membros no mapa
-        membrosClasses[nome] = membros;
-
-        // Heranca
-        if (ctx->IDENTIFICADOR(1)) { // 'extends' clause
-            std::string superClass = ctx->IDENTIFICADOR(1)->getText();
-            Simbolo* superSymbol = tabela.buscarSimbolo(superClass);
-        }
-            
-        if (!superClasse.empty()) {
-            Simbolo* superSimbolo = tabela.buscarSimbolo(superClasse);
-            if (superSimbolo) {
-                for (const Simbolo& membroSuper : superSimbolo->membros) {
-                    membros.push_back(membroSuper);
-                }
-            }
+            visit(membroCtx);
         }
         
-        classeAtual = "";  // Resetar após processar a classe
+        currentClassName = "";
         return nullptr;
     }
 
     antlrcpp::Any visitDeclaracao_funcao(MinhaLinguagemParser::Declaracao_funcaoContext* ctx) override {
         std::string nome = ctx->ID->getText();
         TipoDado tipoRetorno = stringParaTipo(ctx->tipo()->getText());
+        // Verificação especial para main
+        if (nome == "main" && classeAtual == "Programa") {
+            if (tipoRetorno != TipoDado::VOID) {
+                reportarErro(ctx, "Função main deve retornar void");
+            }
+            
+            if (ctx->parametros() && !ctx->parametros()->parametro().empty()) {
+                reportarErro(ctx, "Função main não deve ter parâmetros");
+            }
+        }
         
         std::vector<TipoDado> tiposParam;
         if (ctx->parametros()) {
@@ -509,12 +443,10 @@ public:
         
         // Tratar chamada de superclasse
         if (ctx->DOIS_PONTOS()) {
-            // Corrigido: acessar segundo IDENTIFICADOR
-            std::string nomeSuper = ctx->IDENTIFICADOR(1)->getText();
-            Simbolo* superClasse = tabela.buscarSimbolo(nomeSuper);
-            
-            if (!superClasse || superClasse->tipo != TipoDado::CLASSE) {
-                reportarErro(ctx, "Superclasse inválida: " + nomeSuper);
+            std::string superName = ctx->IDENTIFICADOR(1)->getText();
+            Simbolo* superClass = tabela.buscarSimbolo(superName);
+            if (!superClass) {
+                reportarErro(ctx, "Superclasse não encontrada: " + superName);
             }
         }
         
@@ -607,6 +539,19 @@ public:
         return nullptr;
     }    
 
+    antlrcpp::Any visitAtribuicaoVetor(MinhaLinguagemParser::AtribuicaoVetorContext* ctx) override {
+        TipoDado tipoArray = getTipoComo(visit(ctx->expressao(0)));
+        Value* array = std::any_cast<Value*>(visit(ctx->expressao(0)));
+        Value* index = std::any_cast<Value*>(visit(ctx->expressao(1)));
+        Value* value = std::any_cast<Value*>(visit(ctx->expressao(2)));
+        
+        Value* indices[] = {index};
+        Value* ptr = builder->CreateGEP(array, indices, "elementptr");
+        builder->CreateStore(value, ptr);
+
+        return nullptr;
+    } 
+
     antlrcpp::Any visitAtribuicao(MinhaLinguagemParser::AtribuicaoContext* ctx) override {
         std::string nome = ctx->IDENTIFICADOR()->getText();
         Simbolo* simbolo = tabela.buscarSimbolo(nome);
@@ -683,6 +628,12 @@ public:
             if (tipoEsq == TipoDado::FLOAT || tipoDir == TipoDado::FLOAT) {
                 return TipoDado::FLOAT;
             }
+
+            if ((tipoEsq == TipoDado::CHAR && tipoDir == TipoDado::STRING) ||
+                (tipoEsq == TipoDado::STRING && tipoDir == TipoDado::CHAR)) {
+                return TipoDado::STRING;
+            }            
+
             return TipoDado::INT;
         }
         
@@ -889,6 +840,12 @@ public:
         return nullptr;
     }
 
+    antlrcpp::Any visitCharLiteral(MinhaLinguagemParser::CharLiteralContext* ctx) override {
+        std::string text = ctx->getText();
+        char val = text[1]; // Extract char from 'a'
+        // Handle special cases and return appropriate value
+    }
+
     antlrcpp::Any visitChamadaFuncao(MinhaLinguagemParser::ChamadaFuncaoContext* ctx) override {
         std::string nome = ctx->IDENTIFICADOR()->getText();
         Simbolo* simbolo = tabela.buscarSimbolo(nome);
@@ -945,26 +902,13 @@ public:
     }
 
     antlrcpp::Any visitAcessoVetor(MinhaLinguagemParser::AcessoVetorContext* ctx) override {
-        std::string nome = ctx->IDENTIFICADOR()->getText();
-        Simbolo* simbolo = tabela.buscarSimbolo(nome);
+        Value *arrayPtr = namedValues[ctx->IDENTIFICADOR()->getText()];
+        Value *index = std::any_cast<Value*>(visit(ctx->expressao()));
         
-        if (!simbolo) {
-            reportarErro(ctx, "Vetor não declarado: '" + nome + "'");
-            return TipoDado::INVALIDO;
-        }
+        if (!arrayPtr || !index) return nullptr;
         
-        if (!simbolo->isVetor) {
-            reportarErro(ctx, "'" + nome + "' não é um vetor");
-        } else if (simbolo->categoria != Categoria::VARIAVEL) {
-            reportarErro(ctx, "'" + nome + "' não é uma variável vetorial");
-        }
-        
-        TipoDado tipoIndice = getTipoComo(visit(ctx->expressao()));
-        if (tipoIndice != TipoDado::INT) {
-            reportarErro(ctx, "Índice de vetor deve ser inteiro");
-        }
-        
-        return simbolo->tipo;
+        Value *indices[] = {index};
+        return builder->CreateGEP(arrayPtr, indices, "elementptr");
     }
 
     antlrcpp::Any visitNewVetor(MinhaLinguagemParser::NewVetorContext* ctx) override {

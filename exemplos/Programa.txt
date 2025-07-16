@@ -1,33 +1,6 @@
-class Programa {
-    void main() {
-        Pessoa p = new Pessoa("Ana", 30);
-        Estudante e = new Estudante("Joao", 20, "Computacao");
-
-        p.exibir();
-        e.exibir();
-
-        int notas[5];
-        float soma = 0;
-
-        int i = 0;
-        while (i < 5) {
-            print("Digite a nota " + i + ":");
-            notas[i] = lerInt();
-            soma = soma + notas[i];
-            i = i + 1;
-        }
-
-        float media = soma / 5;
-        print("Media: " + media);
-
-        if (media >= 7) {
-            print("Aprovado");
-        } else {
-            print("Reprovado");
-        }
-
-        for (int j = 0; j < 3; j = j + 1) {
-            print("Estudando linguagens!");
-        }
-    }
+int main() {
+    Pessoa p = new Pessoa("Ana", 30);
+    Estudante e = new Estudante("João", 20, "Computação");
+    print(e.curso); 
+    return 0;
 }

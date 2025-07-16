@@ -52,7 +52,11 @@ declaracao
 estrutura_controle
     : 'if' '(' expressao ')' bloco ('else' bloco)?  # If
     | 'while' '(' expressao ')' bloco               # While
-    | 'for' '(' (declaracao_variavel | expressao? ) ';' expressao? ';' expressao? ')' bloco # For
+    | 'for' '(' 
+        (declaracao_variavel | expressao? ';')   // Corrigido aqui!
+        expressao? ';' 
+        expressao? 
+      ')' bloco                                     # For
     ;
 
 expressao
@@ -76,6 +80,7 @@ expressao
     | expressao '.' IDENTIFICADOR '(' (expressao (',' expressao)*)? ')' # ChamadaMetodo
     | expressao '.' IDENTIFICADOR '=' expressao                # AtribuicaoMembro
     | expressao '[' expressao ']' '=' expressao                # AtribuicaoVetor
+    | CARACTERE                                                # CharLiteral
     ;
 
 // Corrigido para suportar tipos de classe
@@ -95,6 +100,10 @@ tipo
 
 anotacao
     : OVERRIDE
+    ;
+
+funcaoMain 
+    : 'main' '(' ')' bloco
     ;
 
 // Tokens

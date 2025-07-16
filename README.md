@@ -11,6 +11,14 @@ Certifique-se de ter as seguintes dependências instaladas:
 - CMake e Make
 - Compilador C++ (ex: `g++`)
 - Biblioteca ANTLR4 C++
+- LLVM
+
+## Instalacao LLVM
+
+```bash
+sudo apt-get update
+sudo apt-get install llvm-15 llvm-15-dev clang-15 libclang-15-dev
+```
 
 ## 🔧 Compilando o Projeto
 
