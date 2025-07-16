@@ -18,6 +18,7 @@ using namespace llvm;
 class LLVMGenerator : 
     public MinhaLinguagemBaseVisitor {
 private:
+    std::vector<Type*> memberTypes;
     std::unique_ptr<LLVMContext> context;
     std::unique_ptr<Module> module;
     std::unique_ptr<IRBuilder<>> builder;
@@ -268,6 +269,7 @@ public:
         return nullptr;
     }
 
+    // Corrija a função visitDeclaracao_classe:
     antlrcpp::Any visitDeclaracao_classe(MinhaLinguagemParser::Declaracao_classeContext* ctx) override {
         std::string className = ctx->ID->getText();
         currentClassName = className;
@@ -279,10 +281,18 @@ public:
         
         // Criar struct type se não existir
         if (classTypes.find(className) == classTypes.end()) {
-            std::vector<Type*> memberTypes;
+            memberTypes.clear(); // Usar o membro da classe
+
+            if (!superClasse.empty() && classTypes.find(superClasse) != classTypes.end()) {
+                StructType* superType = classTypes[superClasse];
+                for (auto* type : superType->elements()) {
+                    memberTypes.push_back(type);
+                }
+            }
+
             Simbolo* classSymbol = tabela.buscarSimbolo(className);
             if (classSymbol) {
-                for (const auto& member : classSymbol->membros) {
+                for (const auto& member : classSymbol->membros) { // Corrigido: classSymbol->membros
                     if (member.categoria == Categoria::VARIAVEL) {
                         Type* memberType = getLLVMType(member.tipo, member.nomeClasse);
                         if (memberType) memberTypes.push_back(memberType);
@@ -294,22 +304,9 @@ public:
             classTypes[className] = classType;
         }
 
-        // Incluir campos da superclasse
-        if (!superClasse.empty() && classTypes.find(superClasse) != classTypes.end()) {
-            StructType* superType = classTypes[superClasse];
-            for (auto* type : superType->elements()) {
-                memberTypes.push_back(type); // Campos da superclasse
-            }
-        }
-
         // Coletar função main se for a classe Programa
         if (className == "Programa") {
-            membros.push_back(Simbolo{
-                "main",
-                TipoDado::VOID,
-                {},
-                tabela.getNivelAtual()
-            });
+            // Removido o acesso a 'membros'
         }
 
         for (auto membroCtx : ctx->membro()) {
@@ -620,13 +617,10 @@ public:
     }
 
     antlrcpp::Any visitNewObjeto(MinhaLinguagemParser::NewObjetoContext *ctx) override {
-
-        std::string constructorName = className + "_ctor"; // Nome diferenciado
-        Function *constructor = module->getFunction(constructorName);
-        
+    
         std::string className = ctx->IDENTIFICADOR()->getText();
         StructType *classType = classTypes[className];
-        
+
         if (!classType) {
             // Tratar erro: classe não definida
             return nullptr;
@@ -657,18 +651,17 @@ public:
         return objectPtr;
     }
 
-    antlrcpp::Any visitAcessoVetor(MinhaLinguagemParser::AcessoVetorContext *ctx) override {
+    antlrcpp::Any visitAcessoVetor(MinhaLinguagemParser::AcessoVetorContext* ctx) override {
         Value *arrayPtr = namedValues[ctx->IDENTIFICADOR()->getText()];
         Value *index = std::any_cast<Value*>(visit(ctx->expressao()));
         
         if (!arrayPtr || !index) return nullptr;
         
-        // Obter ponteiro para o elemento
-        Value *indices[] = {index};
+        // SOLUÇÃO ATUALIZADA PARA LLVM 15+
         return builder->CreateGEP(
-            arrayPtr->getType()->getScalarType(),
+            i32Type, // Tipo base do array
             arrayPtr,
-            indices,
+            index,
             "elementptr"
         );
     }
@@ -774,7 +767,13 @@ public:
         Value* array = std::any_cast<Value*>(visit(ctx->expressao(0)));
         Value* index = std::any_cast<Value*>(visit(ctx->expressao(1)));
         Value* value = std::any_cast<Value*>(visit(ctx->expressao(2)));
-        Value* ptr = builder->CreateGEP(array, index, "elementptr");
+
+        Value* ptr = builder->CreateGEP(
+            i32Type,
+            array,
+            index,
+            "elementptr"
+        );
         builder->CreateStore(value, ptr);
         return value;
     }

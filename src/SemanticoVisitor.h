@@ -9,6 +9,12 @@
 #include <string>
 #include <set>
 #include <unordered_map>
+#include <any>  // Para std::any_cast
+#include <llvm/IR/Value.h>  // Para llvm::Value
+#include <llvm/IR/IRBuilder.h>  // Para IRBuilder
+#include <llvm/IR/LLVMContext.h>  // Para LLVMContext
+
+using namespace llvm;  
 
 
 class SemanticoVisitor :
@@ -541,16 +547,22 @@ public:
 
     antlrcpp::Any visitAtribuicaoVetor(MinhaLinguagemParser::AtribuicaoVetorContext* ctx) override {
         TipoDado tipoArray = getTipoComo(visit(ctx->expressao(0)));
-        Value* array = std::any_cast<Value*>(visit(ctx->expressao(0)));
-        Value* index = std::any_cast<Value*>(visit(ctx->expressao(1)));
-        Value* value = std::any_cast<Value*>(visit(ctx->expressao(2)));
-        
-        Value* indices[] = {index};
-        Value* ptr = builder->CreateGEP(array, indices, "elementptr");
-        builder->CreateStore(value, ptr);
+        TipoDado tipoIndex = getTipoComo(visit(ctx->expressao(1)));
+        TipoDado tipoValue = getTipoComo(visit(ctx->expressao(2)));
 
-        return nullptr;
-    } 
+        if (tipoIndex != TipoDado::INT) {
+            reportarErro(ctx, "Índice do vetor deve ser inteiro");
+            return TipoDado::INVALIDO;
+        }
+
+        TipoDado tipoBase = converterTipoVetorialParaBase(tipoArray);
+        if (!tiposCompativeis(tipoBase, tipoValue, true)) {
+            reportarErro(ctx, "Atribuição incompatível para elemento do vetor");
+            return TipoDado::INVALIDO;
+        }
+
+        return tipoBase;
+    }
 
     antlrcpp::Any visitAtribuicao(MinhaLinguagemParser::AtribuicaoContext* ctx) override {
         std::string nome = ctx->IDENTIFICADOR()->getText();
@@ -841,9 +853,7 @@ public:
     }
 
     antlrcpp::Any visitCharLiteral(MinhaLinguagemParser::CharLiteralContext* ctx) override {
-        std::string text = ctx->getText();
-        char val = text[1]; // Extract char from 'a'
-        // Handle special cases and return appropriate value
+        return TipoDado::CHAR; // Adicionar retorno
     }
 
     antlrcpp::Any visitChamadaFuncao(MinhaLinguagemParser::ChamadaFuncaoContext* ctx) override {
@@ -902,13 +912,25 @@ public:
     }
 
     antlrcpp::Any visitAcessoVetor(MinhaLinguagemParser::AcessoVetorContext* ctx) override {
-        Value *arrayPtr = namedValues[ctx->IDENTIFICADOR()->getText()];
-        Value *index = std::any_cast<Value*>(visit(ctx->expressao()));
+        std::string nome = ctx->IDENTIFICADOR()->getText();
+        Simbolo* simbolo = tabela.buscarSimbolo(nome);
         
-        if (!arrayPtr || !index) return nullptr;
+        if (!simbolo) {
+            reportarErro(ctx, "Variável não declarada: '" + nome + "'");
+            return TipoDado::INVALIDO;
+        }
         
-        Value *indices[] = {index};
-        return builder->CreateGEP(arrayPtr, indices, "elementptr");
+        if (!simbolo->isVetor) {
+            reportarErro(ctx, "'" + nome + "' não é um vetor");
+            return TipoDado::INVALIDO;
+        }
+        
+        TipoDado tipoIndex = getTipoComo(visit(ctx->expressao()));
+        if (tipoIndex != TipoDado::INT) {
+            reportarErro(ctx, "Índice do vetor deve ser inteiro");
+        }
+        
+        return converterTipoVetorialParaBase(simbolo->tipo);
     }
 
     antlrcpp::Any visitNewVetor(MinhaLinguagemParser::NewVetorContext* ctx) override {
