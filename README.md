@@ -17,6 +17,7 @@ Certifique-se de ter as seguintes dependências instaladas:
 
 ```bash
 sudo apt-get update
+java -jar antlr-4.13.1-complete.jar -Dlanguage=Cpp -visitor -listener MinhaLinguagem.g4
 sudo apt-get install llvm-15 llvm-15-dev clang-15 libclang-15-dev
 ```
 
